@@ -7,8 +7,8 @@ from zoneinfo import ZoneInfo
 from twitchAPI.helper import first
 from helpers.constants import (
     is_whitelisted,
-    twitch,
-    get_cocoasguild
+    get_cocoasguild,
+    get_twitch
 )
 from psql import (
     fetch, 
@@ -28,6 +28,7 @@ class TwitchCog(commands.Cog):
     @app_commands.autocomplete(twitch_username=streamer_autocomplete)
     async def schedule(self, interaction: discord.Interaction, twitch_username: str):
         # get user if any
+        twitch = get_twitch()
         user = await first(twitch.get_users(logins=[twitch_username]))
         if not user.id or not user.login:
             await interaction.response.send_message("Twitch user not found.", ephemeral=True)
