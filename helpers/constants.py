@@ -1,0 +1,31 @@
+import os
+import discord
+from discord import app_commands
+
+PRIVATE_GUILD_ID = int(os.getenv("PRIVATE_GUILD_ID"))
+COCOAS_GUILD_ID = int(os.getenv("COCOAS_GUILD_ID"))
+TWITCH_CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
+TWITCH_CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
+TWITCH_WEBHOOK_SECRET = os.getenv("TWITCH_WEBHOOK_SECRET")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+PUBLIC_URL = os.getenv("PUBLIC_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+WHITELISTED_GUILDS = {
+    "COCOAS": COCOAS_GUILD_ID,
+    "PRIVATE": PRIVATE_GUILD_ID
+}
+
+WHITELISTED_GUILD_IDS = set(WHITELISTED_GUILDS.values())
+
+bot = None
+cocoasguild = None
+privateguild = None
+twitch = None
+eventsub = None
+tree = None
+
+def is_whitelisted():
+    async def predicate(interaction: discord.Interaction):
+        return interaction.guild and interaction.guild.id in WHITELISTED_GUILD_IDS
+    return app_commands.check(predicate)
