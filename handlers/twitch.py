@@ -5,6 +5,7 @@ from helpers.streamersac import streamer_autocomplete
 from dateutil import parser
 from zoneinfo import ZoneInfo
 from twitchAPI.helper import first
+from twitchAPI.type import TwitchResourceNotFound
 from helpers.constants import (
     is_whitelisted,
     get_cocoasguild,
@@ -37,12 +38,17 @@ class TwitchCog(commands.Cog):
                 await interaction.followup.send("Twitch user not found.", ephemeral=True)
                 return
             # get the first 5 segments of their stream schedule
-            hit = await twitch.get_channel_stream_schedule(broadcaster_id=str(user.id), first=5)
+            try:
+                hit = await twitch.get_channel_stream_schedule(broadcaster_id=str(user.id), first=5)
+            except TwitchResourceNotFound:
+                await interaction.followup.send(f"{user.display_name} does not have a schedule.", ephemeral=False)
+                return
             # If there's a schedule, iterate over each segment
             name = hit.data.broadcaster_name
             segments = hit.data.segments
+            msg = ''
             if not segments:
-                await interaction.followup.send(f"{user.display_name} does not have a schedule.", ephemeral=False)
+                await interaction.followup.send(f"{user.display_name} has no segments in their schedule.", ephemeral=False)
                 return
             # Timezone is not available to discord public API
             user_tz = await get_user_timezone(interaction.user.id)
@@ -93,6 +99,7 @@ class TwitchCog(commands.Cog):
                     value=day_value,
                     inline=False
                 )
+                
             await interaction.followup.send(embed=embed, ephemeral=False)
         except Exception as e:
             logger.exception(f"Error fetching schedule: {e}")
