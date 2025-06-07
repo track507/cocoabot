@@ -2,44 +2,40 @@ import discord.ext
 from datetime import datetime
 from discord.ext import commands
 from discord import app_commands
+from discord.ui import Modal, TextInput
 from helpers.constants import (
     is_whitelisted
 )
 from helpers.autocomplete import command_autocomplete
 from handlers.logger import logger
 
-class ReportBugModal(discord.ui.Modal, title="Bug Report"):
+class ReportBugModal(Modal, title="Bug Report"):
     def __init__(self, bot: commands.Bot, command: str):
-        super().__init__()
+        super().__init__(title="Bug Report")
         self.bot = bot
         self.command = command
         
-        title = discord.ui.TextInput(
+        self.title_input = TextInput(
             label="Title",
             placeholder="Short title of your report (60 characters or less)",
             max_length=60
         )
         
-        description = discord.ui.TextInput(
+        self.description_input = TextInput(
             label="Description",
             placeholder="Please describe the bug in detail",
             max_length=500
         )
         
-        steps = discord.ui.TextInput(
+        self.steps_input = TextInput(
             label="Steps to Reproduce",
             placeholder="How can I reproduce this bug?",
             max_length=500
         )
-        
-        super().__init__(
-            title="Bug Report",
-            children=[title, description, steps]
-        )
 
-        self.title_input = title
-        self.description_input = description
-        self.steps_input = steps
+        self.add_item(self.title_input)
+        self.add_item(self.description_input)
+        self.add_item(self.steps_input)
     
     async def on_submit(self, interaction: discord.Interaction):
         bug_channel_id=1374180371092078642
@@ -49,9 +45,9 @@ class ReportBugModal(discord.ui.Modal, title="Bug Report"):
             color=discord.Color.dark_purple()
         )
         embed.add_field(name="Command", value=self.command, inline=False)
-        embed.add_field(name="Title", value=self.title.value, inline=False)
-        embed.add_field(name="Description", value=self.description.value, inline=False)
-        embed.add_field(name="Steps to Reproduce", value=self.steps.value, inline=False)
+        embed.add_field(name="Title", value=self.title_input.value, inline=False)
+        embed.add_field(name="Description", value=self.description_input.value, inline=False)
+        embed.add_field(name="Steps to Reproduce", value=self.steps_input.value, inline=False)
         embed.set_footer(text=f"Reported by {interaction.user}")
         embed.timestamp = datetime.now()
         from handlers.buttons import BugActionButton
@@ -65,7 +61,7 @@ class ReportBugModal(discord.ui.Modal, title="Bug Report"):
 
         await interaction.response.send_message("Bug report submitted!", ephemeral=True)
 
-class RequestFeatureModal(discord.ui.Modal, title="Request Feature"):
+class RequestFeatureModal(Modal, title="Request Feature"):
     title = discord.ui.TextInput(
         label="Title",
         placeholder="Short title of your feature request (45 characters or less)",
