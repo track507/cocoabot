@@ -1,7 +1,7 @@
 import discord.ext
 from discord.ext import commands
 from discord import app_commands
-from helpers.streamersac import streamer_autocomplete
+from helpers.autocomplete import streamer_autocomplete
 from dateutil import parser
 from zoneinfo import ZoneInfo
 from twitchAPI.helper import first

@@ -1,5 +1,4 @@
 import discord
-from psql import execute
 
 class BirthdaySetupButton(discord.ui.View):
     def __init__(self, interaction, channel, role):
@@ -11,6 +10,7 @@ class BirthdaySetupButton(discord.ui.View):
     
     @discord.ui.button(label="Yes",style=discord.ButtonStyle.green)
     async def setup_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        from psql import execute
         await execute("""
             INSERT INTO birthday_guild (guild_id, channel_id, role_id)
             VALUES ($1, $2, $3)
@@ -53,6 +53,7 @@ class BirthdayUpdateButton(discord.ui.View):
     
     @discord.ui.button(label="Yes",style=discord.ButtonStyle.green)
     async def update_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        from psql import execute
         await execute("""
             UPDATE birthday_user
             SET birthdate = $1,
@@ -81,3 +82,136 @@ class BirthdayUpdateButton(discord.ui.View):
         self.value = False
         self.stop()
         
+class BugActionButton(discord.ui.View):
+    def __init__(self, bot, reporter):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.reporter = reporter
+    
+    @discord.ui.button(label="Accept",style=discord.ButtonStyle.green)
+    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Bug marked as accepted.", ephemeral=False)
+        await self.notify_user("Your bug report has been **accepted**.")
+        await interaction.message.edit(view=ProgressQueueView(self.bot, self.reporter))
+    
+    @discord.ui.button(label="Reject", style=discord.ButtonStyle.red)
+    async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Bug marked as rejected.", ephemeral=False)
+        await self.notify_user("Your bug report has been **rejected**.")
+        await interaction.message.edit(view=None)
+    
+    async def notify_user(self, message: str):
+        try:
+            await self.reporter.send(message)
+        except discord.Forbidden:
+            pass
+
+class ProgressQueueView(discord.ui.View):
+    def __init__(self, bot, reporter):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.reporter = reporter
+
+    @discord.ui.button(label="In Progress", style=discord.ButtonStyle.blurple)
+    async def in_progress(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Bug marked as In Progress.", ephemeral=False)
+        await self.notify_user("Your bug report is now **In Progress**.")
+        await interaction.message.edit(view=FinishedBugView(self.bot, self.reporter))
+
+    @discord.ui.button(label="Queue", style=discord.ButtonStyle.grey)
+    async def queue(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Bug added to Queue.", ephemeral=False)
+        await self.notify_user("Your bug report has been added to the **Queue**.")
+        button.disabled = True
+        await interaction.message.edit(view=self)
+
+    async def notify_user(self, message: str):
+        try:
+            await self.reporter.send(message)
+        except discord.Forbidden:
+            pass
+
+class FinishedBugView(discord.ui.View):
+    def __init__(self, bot, reporter):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.reporter = reporter
+    
+    @discord.ui.button(label="Completed", style=discord.ButtonStyle.green)
+    async def completed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Bug has been marked as completed", ephemeral=False)
+        await self.notify_user("Your bug report has been **fixed**.")
+        await interaction.message.edit(view=None)
+    
+    async def notify_user(self, message: str):
+        try:
+            await self.reporter.send(message)
+        except discord.Forbidden:
+            pass
+        
+class FeatureRequestButton(discord.ui.View):
+    def __init__(self, bot, reporter):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.reporter = reporter
+    
+    @discord.ui.button(label="Accept",style=discord.ButtonStyle.green)
+    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Feature marked as accepted.", ephemeral=False)
+        await self.notify_user("Your feature request has been **accepted**.")
+        await interaction.message.edit(view=FeatureQueueView(self.bot, self.reporter))
+    
+    @discord.ui.button(label="Reject", style=discord.ButtonStyle.red)
+    async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Feature marked as rejected.", ephemeral=False)
+        await self.notify_user("Your feature request has been **rejected**.")
+        await interaction.message.edit(view=None)
+    
+    async def notify_user(self, message: str):
+        try:
+            await self.reporter.send(message)
+        except discord.Forbidden:
+            pass
+
+class FeatureQueueView(discord.ui.View):
+    def __init__(self, bot, reporter):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.reporter = reporter
+
+    @discord.ui.button(label="In Progress", style=discord.ButtonStyle.blurple)
+    async def in_progress(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Feature marked as In Progress.", ephemeral=False)
+        await self.notify_user("Your feature request is now **In Progress**.")
+        await interaction.message.edit(view=FinishedFeatureView(self.bot, self.reporter))
+
+    @discord.ui.button(label="Queue", style=discord.ButtonStyle.grey)
+    async def queue(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("feature added to Queue.", ephemeral=False)
+        await self.notify_user("Your feature request has been added to the **Queue**.")
+        button.disabled = True
+        await interaction.message.edit(view=self)
+
+    async def notify_user(self, message: str):
+        try:
+            await self.reporter.send(message)
+        except discord.Forbidden:
+            pass
+
+class FinishedFeatureView(discord.ui.View):
+    def __init__(self, bot, reporter):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.reporter = reporter
+    
+    @discord.ui.button(label="Completed", style=discord.ButtonStyle.green)
+    async def completed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Feature has been marked as completed", ephemeral=False)
+        await self.notify_user("Your feature request has been **added**.")
+        await interaction.message.edit(view=None)
+    
+    async def notify_user(self, message: str):
+        try:
+            await self.reporter.send(message)
+        except discord.Forbidden:
+            pass

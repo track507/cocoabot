@@ -1,5 +1,14 @@
+# Import from libraries
 from twitchAPI.helper import first
 import discord, asyncio
+from discord import app_commands
+from discord.ext import commands, tasks
+from dotenv import load_dotenv
+
+# Import from files
+import helpers.constants as constants
+from handlers.birthday import check_birthdays, announce_birthday
+from handlers.logger import logger
 from psql import (
     fetch, 
     fetchrow, 
@@ -7,11 +16,10 @@ from psql import (
     fetchval,
     close_pool
 )
-from discord import app_commands
-from discord.ext import commands, tasks
-from dotenv import load_dotenv
-import helpers.timezonesac as tz
-from helpers.streamersac import streamer_autocomplete
+from helpers.autocomplete import (
+    streamer_autocomplete,
+    timezone_autocomplete
+)
 from helpers.helpers import (
     setup,
     handle_stream_offline,
@@ -21,9 +29,6 @@ from helpers.constants import (
     is_whitelisted,
     DISCORD_TOKEN
 )
-import helpers.constants as constants
-from handlers.birthday import check_birthdays, announce_birthday
-from handlers.logger import logger
 
 load_dotenv()
 
@@ -305,7 +310,7 @@ async def birthdaysetup(interaction: discord.Interaction, channel: discord.TextC
 @tree.command(name="setbirthday", description="Set your birthday (Once set, can't update for 3 months!)")
 @is_whitelisted()
 @app_commands.describe(birthdate="Month and day you're born.", time_zone="Timezone you live in")
-@app_commands.autocomplete(time_zone=tz.timezone_autocomplete)
+@app_commands.autocomplete(time_zone=timezone_autocomplete)
 async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zone: str):
     await interaction.response.defer(ephemeral=True)
     try:
@@ -531,6 +536,7 @@ async def load_cogs():
     await bot.load_extension("handlers.twitch")
     await bot.load_extension("handlers.timezone")
     await bot.load_extension("handlers.tests")
+    await bot.load_extension("handlers.reporting")
 
 async def main():
     try:
