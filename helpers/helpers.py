@@ -3,6 +3,7 @@ from twitchAPI.object.eventsub import StreamOnlineEvent, StreamOfflineEvent
 from twitchAPI.eventsub.webhook import EventSubWebhook
 from aiohttp import ClientTimeout
 from handlers.logger import logger
+from threading import Thread
 import discord
 import asyncio
 import helpers.constants as constants
@@ -40,9 +41,9 @@ async def setup(bot):
     logger.info("Twitch object details:\n" + pprint.pformat(vars(twitch), indent=4))
     
     eventsub = EventSubWebhook(PUBLIC_URL, 8080, twitch, callback_loop=asyncio.get_running_loop())
-    eventsub.start()
+    Thread(target=start_eventsub_thread, args=(eventsub,), daemon=True).start()
     
-    logger.info("Started Twitch EventSub webhook on port 8080")
+    logger.info("Started Twitch EventSub webhook on port 8080 in background thread")
     
     await eventsub.unsubscribe_all() # remove all existing subscriptions to start fresh
     # iterate over eventSubScriptionResult.data which is a list of EventSubSubscription objects
@@ -69,6 +70,9 @@ async def setup(bot):
     constants.bot_state.tree = bot.tree
     er.setup_errors(bot.tree)
     logger.info(f"Setup complete.")
+    
+def start_eventsub_thread(eventsub):
+    eventsub.start()
     
 async def handle_stream_online(event: StreamOnlineEvent):
     data = event.event
@@ -130,7 +134,7 @@ async def handle_stream_online(event: StreamOnlineEvent):
             )
 
             for row in rows:
-                bot = constants.get_bot
+                bot = constants.get_bot()
                 channel = bot.get_channel(row["channel_id"])
                 if not channel:
                     continue
