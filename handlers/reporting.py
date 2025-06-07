@@ -111,7 +111,6 @@ class ReportingCog(commands.Cog):
     @app_commands.describe(command="Select which command is causing a bug.")
     @app_commands.autocomplete(command=command_autocomplete)
     async def bug(self, interaction: discord.Interaction, command: str):
-        await interaction.response.defer()
         try:
             await interaction.response.send_modal(ReportBugModal(self.bot, command))
         except Exception as e:
@@ -121,7 +120,6 @@ class ReportingCog(commands.Cog):
     @app_commands.command(name="feature", description="Request a feature.")
     @is_whitelisted()
     async def feature(self, interaction: discord.Interaction):
-        await interaction.response.defer()
         try:
             await interaction.response.send_modal(RequestFeatureModal(self.bot))
         except Exception as e:
