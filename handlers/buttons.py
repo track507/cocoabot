@@ -187,7 +187,7 @@ class FeatureQueueView(discord.ui.View):
 
     @discord.ui.button(label="Queue", style=discord.ButtonStyle.grey)
     async def queue(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("feature added to Queue.", ephemeral=False)
+        await interaction.response.send_message("Feature added to Queue.", ephemeral=False)
         await self.notify_user("Your feature request has been added to the **Queue**.")
         button.disabled = True
         await interaction.message.edit(view=self)
