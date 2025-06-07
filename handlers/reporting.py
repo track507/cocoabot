@@ -9,28 +9,37 @@ from helpers.autocomplete import command_autocomplete
 from handlers.logger import logger
 
 class ReportBugModal(discord.ui.Modal, title="Bug Report"):
-    title = discord.ui.TextInput(
-        label="Title",
-        placeholder="Short title of your report (60 characters or less)",
-        max_length=60
-    )
-    
-    description = discord.ui.TextInput(
-        label="Description",
-        placeholder="Please describe the bug in detail",
-        max_length=500
-    )
-    
-    steps = discord.ui.TextInput(
-        label="Steps to Reproduce",
-        placeholder="How can I reproduce this bug?",
-        max_length=500
-    )
-    
     def __init__(self, bot: commands.Bot, command: str):
         super().__init__()
         self.bot = bot
         self.command = command
+        
+        title = discord.ui.TextInput(
+            label="Title",
+            placeholder="Short title of your report (60 characters or less)",
+            max_length=60
+        )
+        
+        description = discord.ui.TextInput(
+            label="Description",
+            placeholder="Please describe the bug in detail",
+            max_length=500
+        )
+        
+        steps = discord.ui.TextInput(
+            label="Steps to Reproduce",
+            placeholder="How can I reproduce this bug?",
+            max_length=500
+        )
+        
+        super().__init__(
+            title="Bug Report",
+            children=[title, description, steps]
+        )
+
+        self.title_input = title
+        self.description_input = description
+        self.steps_input = steps
     
     async def on_submit(self, interaction: discord.Interaction):
         bug_channel_id=1374180371092078642
@@ -59,8 +68,8 @@ class ReportBugModal(discord.ui.Modal, title="Bug Report"):
 class RequestFeatureModal(discord.ui.Modal, title="Request Feature"):
     title = discord.ui.TextInput(
         label="Title",
-        placeholder="Short title of your feature request (60 characters or less)",
-        max_length=60
+        placeholder="Short title of your feature request (45 characters or less)",
+        max_length=45
     )
     
     description = discord.ui.TextInput(
