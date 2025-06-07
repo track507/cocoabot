@@ -10,7 +10,7 @@ from psql import (
 from discord import app_commands
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-import helpers.timezones as tz
+import helpers.timezonesac as tz
 from helpers.streamersac import streamer_autocomplete
 from helpers.helpers import (
     setup,
@@ -31,12 +31,6 @@ load_dotenv()
     I know I can use discord webhook in the discord developer portal but at that point it was a sunk cost...
 """
 
-bot = None
-cocoasguild = None
-privateguild = None
-twitch = None
-eventsub = None
-
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
@@ -44,14 +38,8 @@ tree = bot.tree
 # startup
 @bot.event
 async def on_ready():
-    global cocoasguild, privateguild, bot, twitch, eventsub
     await setup(bot)
-    
-    bot = constants.bot
-    cocoasguild = constants.cocoasguild
-    privateguild = constants.privateguild
-    eventsub = constants.eventsub
-    twitch = constants.twitch
+
     logger.info(f"Logged in as {bot.user}")
     await tree.sync()
 
@@ -76,7 +64,7 @@ async def setlivenotifications(interaction: discord.Interaction, twitch_username
     await interaction.response.defer(ephemeral=True)
     
     try:
-        user = await first(twitch.get_users(logins=[twitch_username]))
+        user = await first(constants.get_twitch().get_users(logins=[twitch_username]))
         """
         Example response:
         TwitchUser(
@@ -128,11 +116,11 @@ async def setlivenotifications(interaction: discord.Interaction, twitch_username
             interaction.guild.id,
         )
         
-        await eventsub.listen_stream_online(
+        await constants.get_eventsub().listen_stream_online(
             broadcaster_user_id=broadcaster_id,
             callback=handle_stream_online
         )
-        await eventsub.listen_stream_offline(
+        await constants.get_eventsub().listen_stream_offline(
             broadcaster_user_id=broadcaster_id,
             callback=handle_stream_offline
         )
@@ -152,6 +140,7 @@ async def setlivenotifications(interaction: discord.Interaction, twitch_username
 async def removenotification(interaction: discord.Interaction, twitch_username: str):
     await interaction.response.defer(ephemeral=True)
     try:
+        twitch = constants.get_twitch()
         user = await first(twitch.get_users(logins=[twitch_username]))
         if not user or not user.id:
             await interaction.followup.send("❌ Twitch user not found.", ephemeral=True)
@@ -210,8 +199,9 @@ async def liststreamers(interaction: discord.Interaction):
 @app_commands.autocomplete(twitch_username=streamer_autocomplete)
 async def status(interaction: discord.Interaction, twitch_username: str):
     await interaction.response.defer(ephemeral=True)
-
     try:
+        twitch = constants.get_twitch()
+        cocoasguild = constants.get_cocoasguild()
         user = await first(twitch.get_users(logins=[twitch_username]))
         if not user:
             await interaction.followup.send("❌ Twitch user not found.", ephemeral=True)
@@ -470,6 +460,7 @@ async def removebirthday(interaction: discord.Interaction, user: discord.Member)
 async def about(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     try:
+        cocoasguild = constants.get_cocoasguild()
         streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else ''
         personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else ''
         shyEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaShy") if cocoasguild else ''
@@ -544,6 +535,9 @@ async def about(interaction: discord.Interaction):
 async def testtwitch(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     try:
+        twitch = constants.get_twitch()
+        eventsub = constants.get_eventsub()
+        cocoasguild = constants.get_cocoasguild()
         user = await first(twitch.get_users(logins=["lxchet"]))
         if not user:
             await interaction.followup.send("❌ Twitch API: User not found.", ephemeral=True)
@@ -645,6 +639,7 @@ async def testtwitch(interaction: discord.Interaction):
 async def testbirthday(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     try:
+        cocoasguild = constants.get_cocoasguild()
         from datetime import datetime
         server_config = await fetchrow("""
             SELECT * FROM birthday_guild WHERE guild_id = $1                   
@@ -744,8 +739,13 @@ async def testbirthday(interaction: discord.Interaction):
         logger.exception("Birthday test failed")
         await interaction.followup.send(f"❌ Birthday test failed: `{str(e)}`", ephemeral=True)
 
+async def load_cogs():
+    await bot.load_extension("handlers.twitch")
+    await bot.load_extension("handlers.timezone")
+
 async def main():
     try:
+        await load_cogs()
         await bot.start(DISCORD_TOKEN)
     except KeyboardInterrupt:
         logger.info("Received SIGINT or KeyboardInterrupt, shutting down...")

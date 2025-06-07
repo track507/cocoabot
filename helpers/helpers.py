@@ -24,21 +24,13 @@ from helpers.constants import (
     PUBLIC_URL
 )
 
-bot_instance = None
-twitch = None
-eventsub = None
-
 async def setup(bot):
-    global twitch, eventsub, bot_instance
-    bot_instance = bot
-
     await init_pool()
     
     bot.add_listener(handle_stream_online, name="on_stream_online")
     bot.add_listener(handle_stream_offline, name="on_stream_offline")
     
     twitch = Twitch(app_id=TWITCH_CLIENT_ID, app_secret=TWITCH_CLIENT_SECRET, session_timeout=ClientTimeout(total=60))
-    constants.twitch = twitch
     assert isinstance(twitch, Twitch), "twitch is not an instance of Twitch"
     
     await twitch.authenticate_app([])
@@ -49,7 +41,6 @@ async def setup(bot):
     
     eventsub = EventSubWebhook(PUBLIC_URL, 8080, twitch, callback_loop=asyncio.get_running_loop())
     eventsub.start()
-    constants.eventsub = eventsub
     
     logger.info("Started Twitch EventSub webhook on port 8080")
     
@@ -70,10 +61,12 @@ async def setup(bot):
         
     logger.info(f"Finished registering {len(rows)} subscriptions.")
     
-    constants.privateguild = discord.utils.get(bot.guilds, id=PRIVATE_GUILD_ID)
-    constants.cocoasguild = discord.utils.get(bot.guilds, id=COCOAS_GUILD_ID)
-    constants.bot = bot
-    constants.tree = bot.tree
+    constants.bot_state.bot = bot
+    constants.bot_state.twitch = twitch
+    constants.bot_state.eventsub = eventsub
+    constants.bot_state.privateguild = discord.utils.get(bot.guilds, id=PRIVATE_GUILD_ID)
+    constants.bot_state.cocoasguild = discord.utils.get(bot.guilds, id=COCOAS_GUILD_ID)
+    constants.bot_state.tree = bot.tree
     er.setup_errors(bot.tree)
     logger.info(f"Setup complete.")
     
@@ -94,6 +87,7 @@ async def handle_stream_online(event: StreamOnlineEvent):
                 return
             # Fetch stream info
             stream = None
+            twitch = constants.get_twitch()
             async for s in twitch.get_streams(user_id=[broadcaster_id]):
                 stream = s
                 break
@@ -136,7 +130,8 @@ async def handle_stream_online(event: StreamOnlineEvent):
             )
 
             for row in rows:
-                channel = bot_instance.get_channel(row["channel_id"])
+                bot = constants.get_bot
+                channel = bot.get_channel(row["channel_id"])
                 if not channel:
                     continue
 

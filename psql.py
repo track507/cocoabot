@@ -48,6 +48,12 @@ async def init_pool():
             )
         """)
         logger.info("Birthday User table checked/created.")
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_timezone (
+                user_id BIGINT PRIMARY KEY,
+                timezone TEXT NOT NULL
+            )
+        """)
 
 def get_pool():
     if _pool is None:
