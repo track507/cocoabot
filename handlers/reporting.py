@@ -120,12 +120,12 @@ class ReportingCog(commands.Cog):
             
     @app_commands.command(name="feature", description="Request a feature.")
     @is_whitelisted()
-    async def bug(self, interaction: discord.Interaction):
+    async def feature(self, interaction: discord.Interaction):
         await interaction.response.defer()
         try:
             await interaction.response.send_modal(RequestFeatureModal(self.bot))
         except Exception as e:
-            logger.exception("Error in /bug command")
+            logger.exception("Error in /feature command")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
             
 async def setup(bot):
