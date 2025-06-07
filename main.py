@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 # Import from files
 import helpers.constants as constants
-from handlers.birthday import check_birthdays, announce_birthday
+from helpers.birthday import check_birthdays, announce_birthday
 from handlers.logger import logger
 from psql import (
     fetch, 
@@ -304,7 +304,7 @@ async def birthdaysetup(interaction: discord.Interaction, channel: discord.TextC
         )
         await interaction.followup.send(embed=embed, ephemeral=False)
     except Exception as e:
-        logger.exception("Error in /setup command")
+        logger.exception("Error in /birthdaysetup command")
         await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
 
 @tree.command(name="setbirthday", description="Set your birthday (Once set, can't update for 3 months!)")
@@ -327,7 +327,7 @@ async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zon
             interaction.guild.id
         )
         if config is None:
-            await interaction.followup.send("Cannot find server configuration.\nPlease have someone with manage guild permissions to use the /set command", ephemeral=True)
+            await interaction.followup.send("Cannot find server configuration.\nPlease have someone with manage guild permissions to use the /birthdaysetup command", ephemeral=True)
             return
         
         existing = await fetchrow("""
@@ -424,12 +424,12 @@ async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zon
         await interaction.followup.send(embed=embed, ephemeral=True)
             
     except Exception as e:
-        logger.exception("Error in /set command")
+        logger.exception("Error in /setbirthday command")
         await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
 
 @discord.ext.commands.has_guild_permissions(moderate_members=True)
 @discord.app_commands.checks.has_permissions(moderate_members=True)
-@tree.command(name="removebirthday", description="Delete a user's birthday, effectively allowing them to use /set again.")
+@tree.command(name="removebirthday", description="Delete a user's birthday, effectively allowing them to use /setbirthday again.")
 @is_whitelisted()
 @app_commands.describe(user="The user to remove the birthday from.")
 async def removebirthday(interaction: discord.Interaction, user: discord.Member):
@@ -443,7 +443,7 @@ async def removebirthday(interaction: discord.Interaction, user: discord.Member)
         )
         
         if not existing:
-            await interaction.followup.send("User was not found in the existing database. If it's their first time, use /set.", ephemeral=True)
+            await interaction.followup.send("User was not found in the existing database. If it's their first time, have them use /setbirthday.", ephemeral=True)
             return
         
         await execute("""

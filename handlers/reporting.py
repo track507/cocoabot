@@ -24,13 +24,15 @@ class ReportBugModal(Modal, title="Bug Report"):
         self.description_input = TextInput(
             label="Description",
             placeholder="Please describe the bug in detail",
-            max_length=500
+            max_length=500,
+            style=discord.TextStyle.paragraph
         )
         
         self.steps_input = TextInput(
             label="Steps to Reproduce",
             placeholder="How can I reproduce this bug?",
-            max_length=500
+            max_length=500,
+            style=discord.TextStyle.paragraph
         )
 
         self.add_item(self.title_input)
@@ -62,50 +64,54 @@ class ReportBugModal(Modal, title="Bug Report"):
         await interaction.response.send_message("Bug report submitted!", ephemeral=True)
 
 class RequestFeatureModal(Modal, title="Request Feature"):
-    title = discord.ui.TextInput(
-        label="Title",
-        placeholder="Short title of your feature request (45 characters or less)",
-        max_length=45
-    )
-    
-    description = discord.ui.TextInput(
-        label="Description",
-        placeholder="Please describe the feature as best you can.",
-        max_length=500
-    )
-    
-    steps = discord.ui.TextInput(
-        label="Impact",
-        placeholder="How would this help others?",
-        max_length=500
-    )
-    
     def __init__(self, bot: commands.Bot):
-        super().__init__()
+        super().__init__(title="Feature Request")
         self.bot = bot
-    
+        self.title_input = TextInput(
+            label="Title",
+            placeholder="Short title of your feature request (45 characters or less)",
+            max_length=45
+        )
+        
+        self.description_input = TextInput(
+            label="Description",
+            placeholder="Please describe the feature as best you can.",
+            max_length=500,
+            style=discord.TextStyle.paragraph
+        )
+        
+        self.impact_input = TextInput(
+            label="Impact",
+            placeholder="How would this help others?",
+            max_length=500,
+            style=discord.TextStyle.paragraph
+        )
+        self.add_item(self.title_input)
+        self.add_item(self.description_input)
+        self.add_item(self.impact_input)
+        
     async def on_submit(self, interaction: discord.Interaction):
-        bug_channel_id=1374180371092078642
-        bug_channel = self.bot.get_channel(bug_channel_id)
+        feature_channel_id = 1374180371092078642
+        feature_channel = self.bot.get_channel(feature_channel_id)
         embed = discord.Embed(
             title="New Feature Request",
             color=discord.Color.dark_purple()
         )
-        embed.add_field(name="Title", value=self.title.value, inline=False)
-        embed.add_field(name="Description", value=self.description.value, inline=False)
-        embed.add_field(name="Impact", value=self.steps.value, inline=False)
-        embed.set_footer(text=f"Reported by {interaction.user}")
+        embed.add_field(name="Title", value=self.title_input.value, inline=False)
+        embed.add_field(name="Description", value=self.description_input.value, inline=False)
+        embed.add_field(name="Impact", value=self.impact_input.value, inline=False)
+        embed.set_footer(text=f"Requested by {interaction.user}")
         embed.timestamp = datetime.now()
-        from handlers.buttons import BugActionButton
-        if bug_channel:
-            await bug_channel.send(embed=embed, view=BugActionButton(self.bot, reporter=interaction.user))
+        from handlers.buttons import FeatureRequestButton
+        if feature_channel:
+            await feature_channel.send(embed=embed, view=FeatureRequestButton(self.bot, reporter=interaction.user))
         
         try:
-            await interaction.user.send("Here's a copy of your bug report:", embed=embed)
+            await interaction.user.send("Here's a copy of your feature request:", embed=embed)
         except discord.Forbidden:
-            await interaction.followup.send("I couldn't DM you a copy of your report.", ephemeral=True)
+            await interaction.followup.send("I couldn't DM you a copy of your request.", ephemeral=True)
 
-        await interaction.response.send_message("Bug report submitted!", ephemeral=True)
+        await interaction.response.send_message("Feature request submitted!", ephemeral=True)
 
 class ReportingCog(commands.Cog):
     def __init__(self, bot):
