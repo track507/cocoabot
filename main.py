@@ -263,7 +263,7 @@ async def status(interaction: discord.Interaction, twitch_username: str):
 
 @discord.ext.commands.has_guild_permissions(manage_guild=True)
 @discord.app_commands.checks.has_permissions(manage_guild=True)
-@tree.command(name="setup", description="Setup birthday notifications")
+@tree.command(name="setupbirthday", description="Setup birthday notifications")
 @is_whitelisted()
 @app_commands.describe(channel="The channel used for birthdays.", role="The role to ping for those wanting to know when a birthday happens.")
 async def birthdaysetup(interaction: discord.Interaction, channel: discord.TextChannel, role: discord.Role = None):
@@ -312,7 +312,7 @@ async def birthdaysetup(interaction: discord.Interaction, channel: discord.TextC
         logger.exception("Error in /setup command")
         await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
 
-@tree.command(name="set", description="Set your birthday (Once set, can't update for 3 months!)")
+@tree.command(name="setbirthday", description="Set your birthday (Once set, can't update for 3 months!)")
 @is_whitelisted()
 @app_commands.describe(birthdate="Month and day you're born.", time_zone="Timezone you live in")
 @app_commands.autocomplete(time_zone=tz.timezone_autocomplete)
@@ -434,7 +434,7 @@ async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zon
 
 @discord.ext.commands.has_guild_permissions(moderate_members=True)
 @discord.app_commands.checks.has_permissions(moderate_members=True)
-@tree.command(name="remove", description="Delete a user's birthday, effectively allowing them to use /set again.")
+@tree.command(name="removebirthday", description="Delete a user's birthday, effectively allowing them to use /set again.")
 @is_whitelisted()
 @app_commands.describe(user="The user to remove the birthday from.")
 async def removebirthday(interaction: discord.Interaction, user: discord.Member):
