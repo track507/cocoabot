@@ -1,3 +1,4 @@
+import discord
 from discord.ui import View, Button
 from discord import Interaction, ButtonStyle, Embed, Color, Forbidden
 
@@ -9,7 +10,7 @@ class BirthdaySetupButton(View):
         self.role = role
         self.value = None
     
-    @Button(label="Yes",style=ButtonStyle.green)
+    @discord.ui.button(label="Yes",style=ButtonStyle.green)
     async def setup_callback(self, interaction: Interaction, button: Button):
         from psql import execute
         await execute("""
@@ -38,7 +39,7 @@ class BirthdaySetupButton(View):
         self.value = True
         self.stop()
         
-    @Button(label="Cancel", style=ButtonStyle.red)
+    @discord.ui.button(label="Cancel", style=ButtonStyle.red)
     async def cancel(self, interaction: Interaction, button: Button):
         await interaction.response.edit_message(content="❌ Setup cancelled.", embed=None, view=None)
         self.value = False
@@ -52,7 +53,7 @@ class BirthdayUpdateButton(View):
         self.timezone = timezone
         self.value = None
     
-    @Button(label="Yes",style=ButtonStyle.green)
+    @discord.ui.button(label="Yes",style=ButtonStyle.green)
     async def update_callback(self, interaction: Interaction, button: Button):
         from psql import execute
         await execute("""
@@ -77,7 +78,7 @@ class BirthdayUpdateButton(View):
         self.value = True
         self.stop()
         
-    @Button(label="Cancel", style=ButtonStyle.red)
+    @discord.ui.button(label="Cancel", style=ButtonStyle.red)
     async def cancel(self, interaction: Interaction, button: Button):
         await interaction.response.edit_message(content="❌ Birthday Update Cancelled.", embed=None, view=None)
         self.value = False
@@ -89,13 +90,13 @@ class BugActionButton(View):
         self.bot = bot
         self.reporter = reporter
     
-    @Button(label="Accept",style=ButtonStyle.green)
+    @discord.ui.button(label="Accept",style=ButtonStyle.green)
     async def accept(self, interaction: Interaction, button: Button):
         await interaction.response.send_message("Bug marked as accepted.", ephemeral=False)
         await self.notify_user("Your bug report has been **accepted**.")
         await interaction.message.edit(view=ProgressQueueView(self.bot, self.reporter))
     
-    @Button(label="Reject", style=ButtonStyle.red)
+    @discord.ui.button(label="Reject", style=ButtonStyle.red)
     async def reject(self, interaction: Interaction, button: Button):
         await interaction.response.send_message("Bug marked as rejected.", ephemeral=False)
         await self.notify_user("Your bug report has been **rejected**.")
@@ -113,13 +114,13 @@ class ProgressQueueView(View):
         self.bot = bot
         self.reporter = reporter
 
-    @Button(label="In Progress", style=ButtonStyle.blurple)
+    @discord.ui.button(label="In Progress", style=ButtonStyle.blurple)
     async def in_progress(self, interaction: Interaction, button: Button):
         await interaction.response.send_message("Bug marked as In Progress.", ephemeral=False)
         await self.notify_user("Your bug report is now **In Progress**.")
         await interaction.message.edit(view=FinishedBugView(self.bot, self.reporter))
 
-    @Button(label="Queue", style=ButtonStyle.grey)
+    @discord.ui.button(label="Queue", style=ButtonStyle.grey)
     async def queue(self, interaction: Interaction, button: Button):
         await interaction.response.send_message("Bug added to Queue.", ephemeral=False)
         await self.notify_user("Your bug report has been added to the **Queue**.")
@@ -138,7 +139,7 @@ class FinishedBugView(View):
         self.bot = bot
         self.reporter = reporter
     
-    @Button(label="Completed", style=ButtonStyle.green)
+    @discord.ui.button(label="Completed", style=ButtonStyle.green)
     async def completed(self, interaction: Interaction, button: Button):
         await interaction.response.send_message("Bug has been marked as completed", ephemeral=False)
         await self.notify_user("Your bug report has been **fixed**.")
@@ -156,13 +157,13 @@ class FeatureRequestButton(View):
         self.bot = bot
         self.reporter = reporter
     
-    @Button(label="Accept",style=ButtonStyle.green)
+    @discord.ui.button(label="Accept",style=ButtonStyle.green)
     async def accept(self, interaction: Interaction, button: Button):
         await interaction.response.send_message("Feature marked as accepted.", ephemeral=False)
         await self.notify_user("Your feature request has been **accepted**.")
         await interaction.message.edit(view=FeatureQueueView(self.bot, self.reporter))
     
-    @Button(label="Reject", style=ButtonStyle.red)
+    @discord.ui.button(label="Reject", style=ButtonStyle.red)
     async def reject(self, interaction: Interaction, button: Button):
         await interaction.response.send_message("Feature marked as rejected.", ephemeral=False)
         await self.notify_user("Your feature request has been **rejected**.")
@@ -180,13 +181,13 @@ class FeatureQueueView(View):
         self.bot = bot
         self.reporter = reporter
 
-    @Button(label="In Progress", style=ButtonStyle.blurple)
+    @discord.ui.button(label="In Progress", style=ButtonStyle.blurple)
     async def in_progress(self, interaction: Interaction, button: Button):
         await interaction.response.send_message("Feature marked as In Progress.", ephemeral=False)
         await self.notify_user("Your feature request is now **In Progress**.")
         await interaction.message.edit(view=FinishedFeatureView(self.bot, self.reporter))
 
-    @Button(label="Queue", style=ButtonStyle.grey)
+    @discord.ui.button(label="Queue", style=ButtonStyle.grey)
     async def queue(self, interaction: Interaction, button: Button):
         await interaction.response.send_message("Feature added to Queue.", ephemeral=False)
         await self.notify_user("Your feature request has been added to the **Queue**.")
@@ -205,7 +206,7 @@ class FinishedFeatureView(View):
         self.bot = bot
         self.reporter = reporter
     
-    @Button(label="Completed", style=ButtonStyle.green)
+    @discord.ui.button(label="Completed", style=ButtonStyle.green)
     async def completed(self, interaction: Interaction, button: Button):
         await interaction.response.send_message("Feature has been marked as completed", ephemeral=False)
         await self.notify_user("Your feature request has been **added**.")
@@ -220,37 +221,17 @@ class FinishedFeatureView(View):
 class PaginatorView(View):
     def __init__(self, interaction: Interaction, pages: list[Embed]):
         super().__init__(timeout=60)
-
-        self.interaction = interaction
         self.pages = pages
-        self.current_page = 0
-
-        self.prev_button = Button(label="⏮️", style=ButtonStyle.secondary, disabled=True)
-        self.next_button = Button(label="Next ⏭️", style=ButtonStyle.secondary, disabled=len(self.pages) <= 1)
-
-        self.prev_button.callback = self.prev_callback
-        self.next_button.callback = self.next_callback
-
-        self.add_item(self.prev_button)
-        self.add_item(self.next_button)
-    
-    async def update_message(self):
-        await self.interaction.edit_original_response(embed=self.pages[self.current_page], view=self)
-    
-    async def prev_button(self, interaction: Interaction):
-        self.current_page -= 1
-        if self.current_page < 0:
-            self.current_page = 0
-        # update states
-        self.prev_button.disabled = self.current_page == 0
-        self.next_button.disabled = self.current_page == len(self.pages) - 1
-        await self.update_message()
-    
-    async def next_button(self, interaction: Interaction):
-        self.current_page += 1
-        if self.current_page >= len(self.pages):
-            self.current_page = len(self.pages) - 1
-        # update states
-        self.prev_button.disabled = self.current_page == 0
-        self.next_button.disabled = self.current_page == len(self.pages) - 1
-        await self.update_message()
+        self.current = 0
+        
+        @discord.ui.button(label='⏮️', style=ButtonStyle.grey)
+        async def previous(self, interaction: Interaction, button: Button):
+            if self.current > 0:
+                self.current -= 1
+                await interaction.response.edit_message(content=self.pages[self.current], view=self)
+                
+        @discord.ui.button(label='⏭️', style=ButtonStyle.grey)
+        async def next(self, interaction: Interaction, button: Button):
+            if self.current < len(self.pages) - 1:
+                self.current += 1
+                await interaction.response.edit_message(content=self.pages[self.current], view=self)
