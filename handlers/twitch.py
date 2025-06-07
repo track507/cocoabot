@@ -12,11 +12,7 @@ from helpers.constants import (
     get_twitch
 )
 from psql import (
-    fetch, 
-    fetchrow, 
-    execute, 
-    fetchval,
-    close_pool
+    fetchrow
 )
 from handlers.logger import logger
 
