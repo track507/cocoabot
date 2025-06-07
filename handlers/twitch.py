@@ -17,6 +17,7 @@ from psql import (
     fetchval,
     close_pool
 )
+from handlers.logger import logger
 
 class TwitchCog(commands.Cog):
     def __init__(self, bot):
@@ -27,17 +28,18 @@ class TwitchCog(commands.Cog):
     @app_commands.describe(twitch_username="Select a Twitch user from this server")
     @app_commands.autocomplete(twitch_username=streamer_autocomplete)
     async def schedule(self, interaction: discord.Interaction, twitch_username: str):
+        await interaction.response.defer() 
         try:
             # get user if any
             twitch = get_twitch()
             user = await first(twitch.get_users(logins=[twitch_username]))
             if not user.id or not user.login:
-                await interaction.response.send_message("Twitch user not found.", ephemeral=True)
+                await interaction.followup.send("Twitch user not found.", ephemeral=True)
                 return
             # get the first 5 segments of their stream schedule
             hit = await twitch.get_channel_stream_schedule(broadcaster_id=str(user.id), first=5)
             if hit is None:
-                await interaction.response.send_message(f"{user.display_name} does not have a schedule.")
+                await interaction.followup.send(f"{user.display_name} does not have a schedule.", ephemeral=False)
                 return
             # If there's a schedule, iterate over each segment
             name = hit.data.broadcaster_name
@@ -91,10 +93,10 @@ class TwitchCog(commands.Cog):
                     value=day_value,
                     inline=False
                 )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=False)
         except Exception as e:
-            print(f"Error fetching schedule: {e}")
-            return None
+            logger.exception(f"Error fetching schedule: {e}")
+            await interaction.followup.send(f"❌ Error fetching schedule: {e}", ephemeral=True)
     
 async def get_user_timezone(user_id):
     try:
@@ -104,7 +106,7 @@ async def get_user_timezone(user_id):
 
         return hit["timezone"] if hit is not None else None
     except Exception as e:
-        print(f"Error fetching timezone: {e}")
+        logger.exception(f"Error fetching timezone: {e}")
         return None
 
 async def setup(bot):

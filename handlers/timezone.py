@@ -18,6 +18,7 @@ class TimezoneCog(commands.Cog):
     @app_commands.describe(time_zone="Select a timezone you'd like to offset /schedule from")
     @app_commands.autocomplete(time_zone=tz.timezone_autocomplete)
     async def set_timezone(self, interaction: Interaction, time_zone: str):
+        await interaction.response.defer(ephemeral=True)
         try:
             await execute("""
                 INSERT INTO user_timezone (user_id, timezone)
@@ -26,10 +27,10 @@ class TimezoneCog(commands.Cog):
                 interaction.user.id,
                 time_zone
             )
-            await interaction.response.send_message(f"Your timezone has been set to {time_zone}")
+            await interaction.followup.send(f"Your timezone has been set to {time_zone}")
         except Exception as e:
             logger.exception("Error in /set_timezone command")
-            await interaction.response.send_message(f"❌ Error: {e}", ephemeral=True)
+            await interaction.followup.send(f"❌ Error: {e}")
             
 async def setup(bot):
     await bot.add_cog(TimezoneCog(bot))
