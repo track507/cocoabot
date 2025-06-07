@@ -30,3 +30,6 @@ class TimezoneCog(commands.Cog):
         except Exception as e:
             logger.exception("Error in /set_timezone command")
             await interaction.response.send_message(f"❌ Error: {e}", ephemeral=True)
+            
+async def setup(bot):
+    await bot.add_cog(TimezoneCog(bot))

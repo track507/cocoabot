@@ -102,3 +102,6 @@ async def get_user_timezone(user_id):
     except Exception as e:
         print(f"Error fetching timezone: {e}")
         return None
+
+async def setup(bot):
+    await bot.add_cog(TwitchCog(bot))
