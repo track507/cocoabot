@@ -537,6 +537,7 @@ async def load_cogs():
     await bot.load_extension("handlers.timezone")
     await bot.load_extension("handlers.tests")
     await bot.load_extension("handlers.reporting")
+    await bot.load_extension("handlers.birthdays")
 
 async def main():
     try:
