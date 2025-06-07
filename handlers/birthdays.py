@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord import app_commands, Interaction, Embed, utils, Color
+from discord import HTTPException, app_commands, Interaction, Embed, utils, Color, NotFound, Forbidden
 from handlers.logger import logger
 from helpers.constants import (
     is_whitelisted,
@@ -58,12 +58,20 @@ class BirthdayCog(commands.Cog):
                     user_id = hit['user_id']
                     birthdate = hit['birthdate']
 
+                    # Requires server member intents
                     member = interaction.guild.get_member(user_id)
-                    if member:
-                        username = f"{member.display_name}"
+                    if member is None:
+                        try:
+                            # doesn't require server member intents but can be rate limited and slower
+                            member = await interaction.guild.fetch_member(user_id)
+                        except (Forbidden, HTTPException, NotFound):
+                            # On any failure → just use user_id cleanly
+                            username = str(user_id)
+                        else:
+                            username = member.display_name
                     else:
-                        username = f"{user_id}"
-
+                        username = member.display_name
+                    
                     line = f"**{username}** \u2022 **{birthdate}**"
                     embed.add_field(
                         name="\u200b",
