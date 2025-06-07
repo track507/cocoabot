@@ -140,8 +140,9 @@ async def handle_stream_online(event: StreamOnlineEvent):
                     continue
 
                 # Emojis
-                personEmoji = discord.utils.get(constants.cocoasguild.emojis, name="cocoaLove") if constants.cocoasguild else None
-                streamEmoji = discord.utils.get(constants.cocoasguild.emojis, name="cocoaLicense") if constants.cocoasguild else None
+                cocoasguild = constants.get_cocoasguild()
+                personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else None
+                streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else None
 
                 embed = discord.Embed(
                     title=f"🩷 {data.broadcaster_user_name} is LIVE",
