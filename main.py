@@ -66,7 +66,7 @@ async def birthday_check():
 @is_whitelisted()
 @app_commands.describe(twitch_username="Twitch username", role="Role to ping", channel="Channel to send notifications")
 async def setlivenotifications(interaction: discord.Interaction, twitch_username: str, role: discord.Role, channel: discord.TextChannel):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
     
     try:
         user = await first(constants.get_twitch().get_users(logins=[twitch_username]))
@@ -87,7 +87,7 @@ async def setlivenotifications(interaction: discord.Interaction, twitch_username
         """
         # print(user)
         if not user.id or not user.login:
-            await interaction.followup.send("Twitch user not found.", ephemeral=True)
+            await interaction.followup.send("Twitch user not found.", ephemeral=False)
             return
 
         broadcaster_id = user.id
@@ -105,7 +105,7 @@ async def setlivenotifications(interaction: discord.Interaction, twitch_username
             interaction.guild.id
         )
         if existing:
-            await interaction.followup.send(f"Notifications for {twitch_name} already setup. Use /removenotification {twitch_name} before attempting to use this command again.", ephemeral=True)
+            await interaction.followup.send(f"Notifications for {twitch_name} already setup. Use /removenotification {twitch_name} before attempting to use this command again.", ephemeral=False)
             return
         
         # store in database
@@ -130,7 +130,7 @@ async def setlivenotifications(interaction: discord.Interaction, twitch_username
             callback=handle_stream_offline
         )
         
-        await interaction.followup.send(f"Notifications for {twitch_name} setup successfully.", ephemeral=True)
+        await interaction.followup.send(f"Notifications for {twitch_name} setup successfully.", ephemeral=False)
         
     except Exception as e:
         logger.exception("Error in setlivenotifications")
@@ -143,7 +143,7 @@ async def setlivenotifications(interaction: discord.Interaction, twitch_username
 @app_commands.describe(twitch_username="Select a Twitch user from this server")
 @app_commands.autocomplete(twitch_username=streamer_autocomplete)
 async def removenotification(interaction: discord.Interaction, twitch_username: str):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
     try:
         twitch = constants.get_twitch()
         user = await first(twitch.get_users(logins=[twitch_username]))
@@ -157,7 +157,7 @@ async def removenotification(interaction: discord.Interaction, twitch_username: 
             interaction.guild.id
         )
         if not row:
-            await interaction.followup.send(f"⚠️ No notification found for {user.display_name}.", ephemeral=True)
+            await interaction.followup.send(f"⚠️ No notification found for {user.display_name}.", ephemeral=False)
             return
 
         await execute(
@@ -169,7 +169,7 @@ async def removenotification(interaction: discord.Interaction, twitch_username: 
         for sub in subs.data:
             if sub.type in ('stream.online', 'stream.offline') and sub.condition.get('broadcaster_user_id') == user.id:
                 await twitch.delete_eventsub_subscription(sub.id)
-        await interaction.followup.send(f"✅ Removed notifications for {user.display_name}.", ephemeral=True)
+        await interaction.followup.send(f"✅ Removed notifications for {user.display_name}.", ephemeral=False)
 
     except Exception as e:
         logger.exception("Error in removenotification")
@@ -178,7 +178,7 @@ async def removenotification(interaction: discord.Interaction, twitch_username: 
 @tree.command(name="liststreamers", description="List all streamers with notifications setup in this server.")
 @is_whitelisted()
 async def liststreamers(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=False)
+    await interaction.response.defer()
     try:
         rows = await fetch(
             "SELECT twitch_name, twitch_link FROM notification WHERE guild_id = $1",
@@ -203,7 +203,7 @@ async def liststreamers(interaction: discord.Interaction):
 @app_commands.describe(twitch_username="Select a Twitch user from this server")
 @app_commands.autocomplete(twitch_username=streamer_autocomplete)
 async def status(interaction: discord.Interaction, twitch_username: str):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
     try:
         twitch = constants.get_twitch()
         cocoasguild = constants.get_cocoasguild()
@@ -262,7 +262,7 @@ async def status(interaction: discord.Interaction, twitch_username: str):
 @is_whitelisted()
 @app_commands.describe(channel="The channel used for birthdays.", role="The role to ping for those wanting to know when a birthday happens.")
 async def birthdaysetup(interaction: discord.Interaction, channel: discord.TextChannel, role: discord.Role = None):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
     try:
         from handlers.buttons import BirthdaySetupButton
         existing = await fetchrow("""
@@ -278,7 +278,7 @@ async def birthdaysetup(interaction: discord.Interaction, channel: discord.TextC
                 color=discord.Color.orange()
             )
             view = BirthdaySetupButton(interaction, channel, role)
-            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            await interaction.followup.send(embed=embed, view=view, ephemeral=False)
             return
             
         # If the guild isn't setup
@@ -312,7 +312,7 @@ async def birthdaysetup(interaction: discord.Interaction, channel: discord.TextC
 @app_commands.describe(birthdate="Month and day you're born.", time_zone="Timezone you live in")
 @app_commands.autocomplete(time_zone=timezone_autocomplete)
 async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zone: str):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
     try:
         from helpers.birthdayparser import parse
         try:
@@ -327,7 +327,7 @@ async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zon
             interaction.guild.id
         )
         if config is None:
-            await interaction.followup.send("Cannot find server configuration.\nPlease have someone with manage guild permissions to use the /birthdaysetup command", ephemeral=True)
+            await interaction.followup.send("Cannot find server configuration.\nPlease have someone with manage guild permissions to use the /birthdaysetup command", ephemeral=False)
             return
         
         existing = await fetchrow("""
@@ -389,7 +389,7 @@ async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zon
                 await interaction.followup.send(
                     content="It has not been 3 months. You cannot update your birthday yet.",
                     embed=embed,
-                    ephemeral=True
+                    ephemeral=False
                 )
                 return
         
@@ -421,7 +421,7 @@ async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zon
             inline=False
         )
         
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=False)
             
     except Exception as e:
         logger.exception("Error in /setbirthday command")
@@ -433,7 +433,7 @@ async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zon
 @is_whitelisted()
 @app_commands.describe(user="The user to remove the birthday from.")
 async def removebirthday(interaction: discord.Interaction, user: discord.Member):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
     try:
         existing = await fetchrow("""
             SELECT * FROM birthday_user WHERE guild_id = $1 AND user_id = $2
@@ -453,7 +453,7 @@ async def removebirthday(interaction: discord.Interaction, user: discord.Member)
             user.id
         )
         
-        await interaction.followup.send(f"{user.mention};'s birthday has been successfully removed.", ephemeral=True)
+        await interaction.followup.send(f"{user.mention};'s birthday has been successfully removed.", ephemeral=False)
             
     except Exception as e:
         logger.exception("Error in /remove command")
@@ -463,7 +463,7 @@ async def removebirthday(interaction: discord.Interaction, user: discord.Member)
 @tree.command(name="about", description="About the bot.")
 @is_whitelisted()
 async def about(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
     try:
         cocoasguild = constants.get_cocoasguild()
         streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else ''
