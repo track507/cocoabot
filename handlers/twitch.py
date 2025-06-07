@@ -69,8 +69,8 @@ class TwitchCog(commands.Cog):
                 start_local = start_dt.astimezone(ZoneInfo(user_tz))
                 end_local = end_dt.astimezone(ZoneInfo(user_tz))
                 
-                start_str = start_local.strftime("%A, %B %d %Y at %I:%M %p %Z")
-                end_str = end_local.strftime("%A, %B %d %Y at %I:%M %p %Z")
+                start_str = start_local.strftime("%I:%M %p")
+                end_str = end_local.strftime("%I:%M %p")
                 date_key = start_local.strftime("%A, %B %d %Y")
                 
                 stream_info = (

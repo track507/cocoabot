@@ -453,7 +453,7 @@ async def removebirthday(interaction: discord.Interaction, user: discord.Member)
             user.id
         )
         
-        await interaction.followup.send(f"{user.mention};'s birthday has been successfully removed.", ephemeral=False)
+        await interaction.followup.send(f"{user.mention}'s birthday has been successfully removed.", ephemeral=False)
             
     except Exception as e:
         logger.exception("Error in /remove command")
