@@ -38,12 +38,12 @@ class TwitchCog(commands.Cog):
                 return
             # get the first 5 segments of their stream schedule
             hit = await twitch.get_channel_stream_schedule(broadcaster_id=str(user.id), first=5)
-            if hit is None:
-                await interaction.followup.send(f"{user.display_name} does not have a schedule.", ephemeral=False)
-                return
             # If there's a schedule, iterate over each segment
             name = hit.data.broadcaster_name
             segments = hit.data.segments
+            if not segments:
+                await interaction.followup.send(f"{user.display_name} does not have a schedule.", ephemeral=False)
+                return
             # Timezone is not available to discord public API
             user_tz = await get_user_timezone(interaction.user.id)
             if user_tz is None:
