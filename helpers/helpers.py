@@ -87,7 +87,7 @@ async def initialize_twitch(twitch: Twitch):
             logger.exception("Error in initialize_twitch process")
 
 def run_web_server():
-    uvicorn.run(fastapi_app, host="0.0.0.0", port=8080)
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=8081)
     
 async def handle_stream_online(event: StreamOnlineEvent):
     data = event.event
