@@ -52,14 +52,20 @@ async def twitch_eventsub_callback(request: Request):
     )
     from twitchAPI.object.eventsub import StreamOnlineEvent, StreamOfflineEvent
 
-    hmac_message = message_id + timestamp + body.decode("utf-8")
+    body_bytes = await request.body()
+    hmac_message_bytes = (
+        message_id.encode("utf-8") +
+        timestamp.encode("utf-8") +
+        body_bytes
+    )
+
     computed_hmac = hmac.new(
         TWITCH_WEBHOOK_SECRET.encode("utf-8"),
-        msg=hmac_message.encode("utf-8"),
+        msg=hmac_message_bytes,
         digestmod=hashlib.sha256
     )
-    expected_signature = "sha256=" + computed_hmac.hexdigest()
 
+    expected_signature = "sha256=" + computed_hmac.hexdigest()
     if not hmac.compare_digest(expected_signature, message_signature):
         logger.warning("Invalid Twitch EventSub signature")
         return Response(status_code=403)
