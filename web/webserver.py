@@ -29,7 +29,7 @@ async def oauth_callback(request: Request):
         logger.info(f"OAuth callback error: {e}")
         return f"Error in OAuth callback: {e}"
 
-@app.post("/twitch/eventsub")
+@app.post("/twitch/eventsub/callback")
 async def twitch_eventsub_callback(request: Request):
     body = await request.body()
     headers = request.headers
