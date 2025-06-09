@@ -45,35 +45,24 @@ async def twitch_eventsub_callback(request: Request):
     headers = request.headers
     print(f"Callback headers: {headers}")
 
-    # Validate signature
-    message_id = headers["Twitch-Eventsub-Message-Id"]
-    timestamp = headers["Twitch-Eventsub-Message-Timestamp"]
-    message_type = headers["Twitch-Eventsub-Message-Type"]
-    message_signature = headers["Twitch-Eventsub-Message-Signature"]
-
-    # Build HMAC input
-    hmac_message_bytes = (
-        message_id.encode("utf-8") +
-        timestamp.encode("utf-8") +
-        body_bytes
-    )
-
-    computed_hmac = hmac.new(
-        TWITCH_WEBHOOK_SECRET.encode("utf-8"),
-        msg=hmac_message_bytes,
-        digestmod=hashlib.sha256
-    )
-
-    expected_signature = "sha256=" + computed_hmac.hexdigest()
-    print(f"Expected signature: {expected_signature}")
-    print(f"Message signature: {message_signature}")
-
-    # Check signature
-    if not hmac.compare_digest(expected_signature, message_signature):
+    # HMAC must be in this order
+    message_id = headers["Twitch-Eventsub-Message-Id"].lower()
+    timestamp = headers["Twitch-Eventsub-Message-Timestamp"].lower()
+    message_signature = headers["Twitch-Eventsub-Message-Signature"].lower()
+    # not part of hmac
+    message_type = headers["Twitch-Eventsub-Message-Type"].lower()
+    
+    hmac_prefix = 'sha256='
+    
+    # build message used to get the HMAC.
+    msg = request.headers[message_id] + request.headers[timestamp] + request.body()
+    # compute the hmac
+    hmac_computed = hmac_prefix + hmac.new('sha256', TWITCH_WEBHOOK_SECRET).update(msg).digest('hex')
+    
+    if not hmac.compare_digest(hmac_computed, message_signature):
         logger.warning("Invalid Twitch EventSub signature")
         return Response(status_code=403)
 
-    # Parse body safely (don't call await request.json() again!)
     json_body = json.loads(body_bytes)
 
     # Process message
