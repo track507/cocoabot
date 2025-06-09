@@ -31,7 +31,7 @@ async def oauth_callback(request: Request):
 
 @app.post("/twitch/eventsub/callback")
 async def twitch_eventsub_callback(request: Request):
-    import hmac, json
+    import hmac, hashlib, json
     from helpers.constants import TWITCH_WEBHOOK_SECRET
     from helpers.helpers import (
         handle_stream_offline,
@@ -44,30 +44,39 @@ async def twitch_eventsub_callback(request: Request):
 
     headers = request.headers
     print(f"Callback headers: {headers}")
-    
-    # Notification request headers
-    TWITCH_MESSAGE_ID = "Twitch-Eventsub-Message-Id".lower()
-    TWITCH_MESSAGE_TIMESTAMP = "Twitch-Eventsub-Message-Timestamp".lower()
-    TWITCH_MESSAGE_SIGNATURE = "Twitch-Eventsub-Message-Signature".lower()
-    
-    # not part of hmac
+
+    # Extract required headers
+    message_id = headers["Twitch-Eventsub-Message-Id"]
+    timestamp = headers["Twitch-Eventsub-Message-Timestamp"]
+    message_signature = headers["Twitch-Eventsub-Message-Signature"]
     message_type = headers["Twitch-Eventsub-Message-Type"]
-    
-    hmac_prefix = 'sha256='
-    
-    # HMAC must be in this order
-    # build message used to get the HMAC.
-    msg = request.headers[TWITCH_MESSAGE_ID] + request.headers[TWITCH_MESSAGE_TIMESTAMP] + body_bytes
-    # compute the hmac
-    hmac_computed = hmac_prefix + hmac.new('sha256', TWITCH_WEBHOOK_SECRET).update(msg).digest('hex')
-    
-    if not hmac.compare_digest(hmac_computed, request.headers[TWITCH_MESSAGE_SIGNATURE]):
+
+    # Build message used for HMAC
+    hmac_message_bytes = (
+        message_id.encode("utf-8") +
+        timestamp.encode("utf-8") +
+        body_bytes
+    )
+
+    # Compute HMAC
+    hmac_computed = "sha256=" + hmac.new(
+        TWITCH_WEBHOOK_SECRET.encode("utf-8"),
+        msg=hmac_message_bytes,
+        digestmod=hashlib.sha256
+    ).hexdigest()
+
+    print(f"Expected signature: {hmac_computed}")
+    print(f"Message signature: {message_signature}")
+
+    # Compare signatures safely
+    if not hmac.compare_digest(hmac_computed, message_signature):
         logger.warning("Invalid Twitch EventSub signature")
         return Response(status_code=403)
 
+    # Parse body safely
     json_body = json.loads(body_bytes)
 
-    # Process message
+    # Handle Twitch webhook types
     if message_type == "webhook_callback_verification":
         challenge = json_body["challenge"]
         logger.info(f"Twitch EventSub verification: {challenge}")
