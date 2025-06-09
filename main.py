@@ -34,6 +34,7 @@ tree = bot.tree
 @bot.event
 async def on_ready():
     await setup(bot)
+    await load_cogs()
 
     logger.info(f"Logged in as {bot.user}")
     await tree.sync()
@@ -122,7 +123,6 @@ async def load_cogs():
 async def main():
     try:
         await init_pool()
-        await load_cogs()
         await bot.start(DISCORD_TOKEN)
     except KeyboardInterrupt:
         logger.info("Received SIGINT or KeyboardInterrupt, shutting down...")

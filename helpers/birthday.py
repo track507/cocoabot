@@ -83,7 +83,7 @@ async def announce_birthday(bot, hits):
                 role_mention = role.mention
         from helpers.constants import get_cocoasguild
         cocoasguild = get_cocoasguild()
-        personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else None
+        personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else ''
         # build the embed
         embed = discord.Embed(
             title=f"{personEmoji} Today is the following user(s) birthdays!",
