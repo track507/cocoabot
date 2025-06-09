@@ -31,10 +31,18 @@ async def oauth_callback(request: Request):
 
 @app.post("/twitch/eventsub/callback")
 async def twitch_eventsub_callback(request: Request):
-    body = await request.body()
-    headers = request.headers
+    import hmac, hashlib, json
+    from helpers.constants import TWITCH_WEBHOOK_SECRET
+    from helpers.helpers import (
+        handle_stream_offline,
+        handle_stream_online
+    )
+    from twitchAPI.object.eventsub import StreamOnlineEvent, StreamOfflineEvent
     
-    print(f"Callback body: {body}")
+    body_bytes = await request.body()
+    print(f"Callback body: {body_bytes}")
+
+    headers = request.headers
     print(f"Callback headers: {headers}")
 
     # Validate signature
@@ -43,16 +51,7 @@ async def twitch_eventsub_callback(request: Request):
     message_type = headers["Twitch-Eventsub-Message-Type"]
     message_signature = headers["Twitch-Eventsub-Message-Signature"]
 
-    import hmac
-    import hashlib
-    from helpers.constants import TWITCH_WEBHOOK_SECRET
-    from helpers.helpers import (
-        handle_stream_offline,
-        handle_stream_online
-    )
-    from twitchAPI.object.eventsub import StreamOnlineEvent, StreamOfflineEvent
-
-    body_bytes = await request.body()
+    # Build HMAC input
     hmac_message_bytes = (
         message_id.encode("utf-8") +
         timestamp.encode("utf-8") +
@@ -68,13 +67,16 @@ async def twitch_eventsub_callback(request: Request):
     expected_signature = "sha256=" + computed_hmac.hexdigest()
     print(f"Expected signature: {expected_signature}")
     print(f"Message signature: {message_signature}")
+
+    # Check signature
     if not hmac.compare_digest(expected_signature, message_signature):
         logger.warning("Invalid Twitch EventSub signature")
         return Response(status_code=403)
 
-    # Process message
-    json_body = await request.json()
+    # Parse body safely (don't call await request.json() again!)
+    json_body = json.loads(body_bytes)
 
+    # Process message
     if message_type == "webhook_callback_verification":
         challenge = json_body["challenge"]
         logger.info(f"Twitch EventSub verification: {challenge}")
