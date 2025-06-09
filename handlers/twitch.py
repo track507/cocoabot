@@ -45,6 +45,8 @@ class TwitchCog(commands.Cog):
                 await interaction.followup.send(f"❌ Error fetching schedule: {e}", ephemeral=True)
                 return
                 
+            # debug 
+            logger.info(f"hit: {hit}")
             # If there's a schedule, iterate over each segment
             segments = hit.segments
             name = hit.broadcaster_name
@@ -67,7 +69,7 @@ class TwitchCog(commands.Cog):
                 end_dt = s.end_time
                 title = s.title
                 cat = s.category
-                name = cat.name if cat is not None else 'No Category'
+                cat_name = cat.name if cat is not None else 'No Category'
                 
                 # This will be either America/Chicago etc. or UTC
                 start_local = start_dt.astimezone(ZoneInfo(user_tz))
@@ -79,7 +81,7 @@ class TwitchCog(commands.Cog):
                 
                 stream_info = (
                     f"{streamEmoji} **{title}**\n"
-                    f"  <:cocoascontroller:1378540036437573734> Playing: {name}\n"
+                    f"  <:cocoascontroller:1378540036437573734> Playing: {cat_name}\n"
                     f"  {boba} From: {start_str} → {end_str}\n"
                 )
                 
