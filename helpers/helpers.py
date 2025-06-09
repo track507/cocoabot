@@ -41,7 +41,7 @@ async def setup(bot):
     logger.debug(f"twitch: {twitch} (type: {type(twitch)})")
     logger.info("Twitch object details:\n" + pprint.pformat(vars(twitch), indent=4))
     
-    eventsub = EventSubWebhook(PUBLIC_URL, 8080, twitch, callback_loop=asyncio.get_running_loop())
+    eventsub = EventSubWebhook(f"{PUBLIC_URL}/twitch/eventsub", 8080, twitch, callback_loop=asyncio.get_running_loop())
     logger.info("Started Twitch EventSub webhook on port 8080")
     
     Thread(target=run_web_server, daemon=True).start()

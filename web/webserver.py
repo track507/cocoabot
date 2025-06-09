@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from twitchAPI.twitch import Twitch
 from twitchAPI.oauth import UserAuthenticator
 from helpers.constants import get_twitch
@@ -29,20 +29,63 @@ async def oauth_callback(request: Request):
         logger.info(f"OAuth callback error: {e}")
         return f"Error in OAuth callback: {e}"
 
-@app.post("/callback")
+@app.post("/twitch/eventsub")
 async def twitch_eventsub_callback(request: Request):
-    from helpers.constants import get_eventsub
     body = await request.body()
-    headers = dict(request.headers)
+    headers = request.headers
+    
+    print(f"Callback body: {body}")
+    print(f"Callback headers: {headers}")
 
-    # Forward to EventSubWebhook's request handler
-    response = get_eventsub().handle_eventsub_request(body, headers)
+    # Validate signature
+    message_id = headers["Twitch-Eventsub-Message-Id"]
+    timestamp = headers["Twitch-Eventsub-Message-Timestamp"]
+    message_type = headers["Twitch-Eventsub-Message-Type"]
+    message_signature = headers["Twitch-Eventsub-Message-Signature"]
 
-    return Response(
-        content=response.content,
-        status_code=response.status_code,
-        headers=response.headers
+    import hmac
+    import hashlib
+    from helpers.constants import TWITCH_WEBHOOK_SECRET
+    from helpers.helpers import (
+        handle_stream_offline,
+        handle_stream_online
     )
+    from twitchAPI.object.eventsub import StreamOnlineEvent, StreamOfflineEvent
+
+    hmac_message = message_id + timestamp + body.decode("utf-8")
+    computed_hmac = hmac.new(
+        TWITCH_WEBHOOK_SECRET.encode("utf-8"),
+        msg=hmac_message.encode("utf-8"),
+        digestmod=hashlib.sha256
+    )
+    expected_signature = "sha256=" + computed_hmac.hexdigest()
+
+    if not hmac.compare_digest(expected_signature, message_signature):
+        logger.warning("Invalid Twitch EventSub signature")
+        return Response(status_code=403)
+
+    # Process message
+    json_body = await request.json()
+
+    if message_type == "webhook_callback_verification":
+        challenge = json_body["challenge"]
+        logger.info(f"Twitch EventSub verification: {challenge}")
+        return Response(content=challenge, media_type="text/plain")
+
+    if message_type == "notification":
+        event_type = json_body["subscription"]["type"]
+        event_payload = json_body["event"]
+
+        logger.info(f"Received Twitch EventSub event: {event_type} → {event_payload}")
+
+        if event_type == "stream.online":
+            await handle_stream_online(StreamOnlineEvent(event=json_body["event"]))
+        elif event_type == "stream.offline":
+            await handle_stream_offline(StreamOfflineEvent(event=json_body["event"]))
+
+        return Response(status_code=204)
+
+    return Response(status_code=204)
 
 # async func to store user in DB
 async def store_user_authentication(discord_user_id, access_token, refresh_token, expires_in):
