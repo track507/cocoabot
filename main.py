@@ -9,20 +9,11 @@ from dotenv import load_dotenv
 import helpers.constants as constants
 from handlers.logger import logger
 from psql import (
-    fetch, 
-    fetchrow, 
-    execute, 
-    fetchval,
+    init_pool,
     close_pool
-)
-from helpers.autocomplete import (
-    streamer_autocomplete,
-    timezone_autocomplete
 )
 from helpers.helpers import (
     setup,
-    handle_stream_offline,
-    handle_stream_online
 )
 from helpers.constants import (
     is_whitelisted,
@@ -130,6 +121,7 @@ async def load_cogs():
 
 async def main():
     try:
+        await init_pool()
         await load_cogs()
         await bot.start(DISCORD_TOKEN)
     except KeyboardInterrupt:

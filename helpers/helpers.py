@@ -29,7 +29,6 @@ from helpers.constants import (
 from web.webserver import app as fastapi_app
 
 async def setup(bot):
-    await init_pool()
     
     bot.add_listener(handle_stream_online, name="on_stream_online")
     bot.add_listener(handle_stream_offline, name="on_stream_offline")
