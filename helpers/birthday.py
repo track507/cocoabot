@@ -42,6 +42,7 @@ async def check_birthdays(bot):
         return None
     
 async def announce_birthday(bot, hits):
+    from discord import Forbidden, HTTPException, NotFound
     guild_birthdays = {}
     
     for bd in hits:
@@ -90,10 +91,15 @@ async def announce_birthday(bot, hits):
         )
         
         for user in users:
-            # Check if the user is still in the server.
-            member = guild.get_member(user['user_id'])
-            if not member:
-                continue
+            user_id = user['user_id']
+            member = guild.get_member(user_id)
+            if member is None:
+                try:
+                    # doesn't require server member intents but can be rate limited and slower
+                    member = await guild.fetch_member(user_id)
+                except (Forbidden, HTTPException, NotFound):
+                    logger.warning(f"Could not find member {user_id} in guild {guild_id}")
+                    continue  # skip this user if they can't be fetched
             
             line = f"{member.mention}"
                 
