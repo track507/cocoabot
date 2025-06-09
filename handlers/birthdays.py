@@ -31,7 +31,7 @@ class BirthdayCog(commands.Cog):
         self.birthday_check.start()
         
     # Check every hour since we defined their tz, we want to announce their birthday at 12am in their tz
-    @tasks.loop(hours=1)
+    @tasks.loop(seconds=15)
     async def birthday_check(self):
         logger.info("[BirthdayAnnouncer] Checking for birthdays...")
         hits = await check_birthdays(self.bot)
@@ -40,6 +40,11 @@ class BirthdayCog(commands.Cog):
         else:
             logger.info(f"[BirthdayAnnouncer] Found {len(hits)} birthday(s).")
             await announce_birthday(self.bot, hits)
+    
+    @birthday_check.before_loop
+    async def before_birthday_check(self):
+        await self.bot.wait_until_ready()
+        logger.info("[BirthdayAnnouncer] Task ready to run.")
             
     @discord.ext.commands.has_guild_permissions(manage_guild=True)
     @app_commands.checks.has_permissions(manage_guild=True)

@@ -88,7 +88,7 @@ async def announce_birthday(bot, hits):
         
         for user in users:
             # Check if the user is still in the server.
-            member = guild.get_member(user_id)
+            member = guild.get_member(user['user_id'])
             if not member:
                 continue
             
