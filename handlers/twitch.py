@@ -40,13 +40,15 @@ class TwitchCog(commands.Cog):
             except TwitchResourceNotFound:
                 await interaction.followup.send(f"{user.display_name} does not have a schedule.", ephemeral=False)
                 return
-            # If there's a schedule, iterate over each segment
-            name = hit.data.broadcaster_name
-            segments = hit.data.segments
-            msg = ''
-            if not segments:
-                await interaction.followup.send(f"{user.display_name} has no segments in their schedule.", ephemeral=False)
+            except Exception as e:
+                logger.exception(f"Error in get_channel_stream_schedule: {e}")
+                await interaction.followup.send(f"❌ Error fetching schedule: {e}", ephemeral=True)
                 return
+                
+            # If there's a schedule, iterate over each segment
+            segments = hit.segments
+            name = hit.broadcaster_name
+    
             # Timezone is not available to discord public API
             user_tz = await get_user_timezone(interaction.user.id)
             if user_tz is None:
@@ -61,10 +63,10 @@ class TwitchCog(commands.Cog):
             for s in segments:
                 # Parse datetime in state_time and end_time attributes (RFC 3339 format)
                 # "2025-05-09T12:00:00Z"
-                start_dt = parser.isoparse(s["start_time"])
-                end_dt = parser.isoparse(s["end_time"])
-                title = s["title"]
-                cat = s['category']['name']
+                start_dt = parser.isoparse(s.start_time)
+                end_dt = parser.isoparse(s.end_time)
+                title = s.title
+                cat = s.category.name
                 
                 # This will be either America/Chicago etc. or UTC
                 start_local = start_dt.astimezone(ZoneInfo(user_tz))
@@ -88,16 +90,26 @@ class TwitchCog(commands.Cog):
                 title=f"🩷 {name}'s Schedule",
                 color=discord.Color(value=0xf8e7ef)
             )
+            pages = []
             
             for date_key, streams in groups.items():
                 day_value = "\n".join(streams)
+
+                embed = discord.Embed(
+                    title=f"🩷 {name}'s Schedule",
+                    description=f"{personEmoji} {date_key}",
+                    color=discord.Color(value=0xf8e7ef)
+                )
                 embed.add_field(
-                    name=f"{personEmoji} {date_key}",
+                    name="Streams",
                     value=day_value,
                     inline=False
                 )
+                pages.append(embed)
                 
-            await interaction.followup.send(embed=embed, ephemeral=False)
+            from handlers.buttons import PaginatorView
+            view = PaginatorView(interaction, pages)
+            await interaction.followup.send(embed=pages[0], view=view, ephemeral=False)
         except Exception as e:
             logger.exception(f"Error fetching schedule: {e}")
             await interaction.followup.send(f"❌ Error fetching schedule: {e}", ephemeral=True)
@@ -108,14 +120,19 @@ class TwitchCog(commands.Cog):
     async def oauth_user(self, interaction: discord.Interaction):
         await interaction.response.defer()
         try:
-            from helpers.constants import get_twitch_auth_scope
+            from helpers.constants import get_twitch_auth_scope, OAUTH_CALLBACK_URL
             twitch = get_twitch()
             
             # Required permission to use /createclip
             target_scope = get_twitch_auth_scope()
-            auth = UserAuthenticator(twitch, target_scope, force_verify=False)
+            auth = UserAuthenticator(
+                twitch,
+                target_scope,
+                force_verify=False,
+                url=f"{OAUTH_CALLBACK_URL}?state={interaction.user.id}"
+            )
             # get link to authorize
-            auth_url = auth.get_auth_url(state=str(interaction.user.id))
+            auth_url = auth.return_auth_url()
             await interaction.response.send_message(f"Please authorize here: {auth_url}", ephemeral=True)
         except Exception as e:
             logger.exception("Error in /authorizetwitch command")
