@@ -34,12 +34,12 @@ class BirthdayCog(commands.Cog):
     @tasks.loop(hours=1)
     async def birthday_check(self):
         logger.info("[BirthdayAnnouncer] Checking for birthdays...")
-        hits = await check_birthdays()
+        hits = await check_birthdays(self.bot)
         if not hits:
             logger.info("[BirthdayAnnouncer] No birthdays found.")
         else:
             logger.info(f"[BirthdayAnnouncer] Found {len(hits)} birthday(s).")
-            await announce_birthday(hits)
+            await announce_birthday(self.bot, hits)
             
     @discord.ext.commands.has_guild_permissions(manage_guild=True)
     @app_commands.checks.has_permissions(manage_guild=True)

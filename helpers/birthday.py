@@ -4,8 +4,7 @@ from datetime import datetime
 import pytz
 import discord
 
-async def check_birthdays():
-    from helpers.constants import bot
+async def check_birthdays(bot):
     utc_now = datetime.now()
     hits = await fetch("""
         SELECT * FROM birthday_user
@@ -39,8 +38,7 @@ async def check_birthdays():
     else:
         return None
     
-async def announce_birthday(hits):
-    from helpers.constants import bot, cocoasguild
+async def announce_birthday(bot, hits):
     guild_birthdays = {}
     
     for bd in hits:
@@ -79,7 +77,8 @@ async def announce_birthday(hits):
             role = guild.get_role(config['role_id'])
             if role:
                 role_mention = role.mention
-        
+        from helpers.constants import get_cocoasguild
+        cocoasguild = get_cocoasguild()
         personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else None
         # build the embed
         embed = discord.Embed(
