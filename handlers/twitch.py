@@ -104,7 +104,7 @@ class TwitchCog(commands.Cog):
                 day_value = "\n".join(streams)
 
                 embed = discord.Embed(
-                    title=f"🩷 {name}'s Schedule",
+                    title=f"🩷 {name}'s Schedule (Time shown in {user_tz.replace('_', ' ')})",
                     description=f"{personEmoji} {date_key}",
                     color=discord.Color(value=0xf8e7ef)
                 )
