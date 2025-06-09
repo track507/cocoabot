@@ -10,7 +10,7 @@ async def check_birthdays(bot):
         SELECT * FROM birthday_user
     """)
     
-    guild_ids = set()
+    birthday_hits = []
     
     for row in hits:
         guild_id = row['guild_id']
@@ -31,10 +31,13 @@ async def check_birthdays(bot):
         if today_str == birthdate and hour_now == 0:
             guild = bot.get_guild(guild_id)
             if guild is not None:
-                guild_ids.add(guild_id)
+                birthday_hits.append({
+                    'guild_id': guild_id,
+                    'user_id': user_id
+                })
     
-    if guild_ids:
-        return list(guild_ids)
+    if birthday_hits:
+        return birthday_hits
     else:
         return None
     
