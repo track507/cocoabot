@@ -224,17 +224,17 @@ class PaginatorTextView(View):
         self.pages = pages
         self.current = 0
         
-        @discord.ui.button(label='⏮️', style=ButtonStyle.grey)
-        async def previous(self, interaction: Interaction, button: Button):
-            if self.current > 0:
-                self.current -= 1
-                await interaction.response.edit_message(content=self.pages[self.current], view=self)
-                
-        @discord.ui.button(label='⏭️', style=ButtonStyle.grey)
-        async def next(self, interaction: Interaction, button: Button):
-            if self.current < len(self.pages) - 1:
-                self.current += 1
-                await interaction.response.edit_message(content=self.pages[self.current], view=self)
+    @discord.ui.button(label='⏮️', style=ButtonStyle.grey)
+    async def previous(self, interaction: Interaction, button: Button):
+        if self.current > 0:
+            self.current -= 1
+            await interaction.response.edit_message(content=self.pages[self.current], view=self)
+            
+    @discord.ui.button(label='⏭️', style=ButtonStyle.grey)
+    async def next(self, interaction: Interaction, button: Button):
+        if self.current < len(self.pages) - 1:
+            self.current += 1
+            await interaction.response.edit_message(content=self.pages[self.current], view=self)
                 
 class PaginatorEmbedView(View):
     def __init__(self, interaction: Interaction, pages: list[Embed]):
@@ -242,14 +242,14 @@ class PaginatorEmbedView(View):
         self.pages = pages
         self.current = 0
         
-        @discord.ui.button(label='⏮️', style=ButtonStyle.grey)
-        async def previous(self, interaction: Interaction, button: Button):
-            if self.current > 0:
-                self.current -= 1
-                await interaction.response.edit_message(embed=self.pages[self.current], view=self)
-                
-        @discord.ui.button(label='⏭️', style=ButtonStyle.grey)
-        async def next(self, interaction: Interaction, button: Button):
-            if self.current < len(self.pages) - 1:
-                self.current += 1
-                await interaction.response.edit_message(embed=self.pages[self.current], view=self)
+    @discord.ui.button(label='⏮️', style=ButtonStyle.grey)
+    async def previous(self, interaction: Interaction, button: Button):
+        if self.current > 0:
+            self.current -= 1
+            await interaction.response.edit_message(embed=self.pages[self.current], view=self)
+            
+    @discord.ui.button(label='⏭️', style=ButtonStyle.grey)
+    async def next(self, interaction: Interaction, button: Button):
+        if self.current < len(self.pages) - 1:
+            self.current += 1
+            await interaction.response.edit_message(embed=self.pages[self.current], view=self)
