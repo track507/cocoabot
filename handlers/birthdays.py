@@ -1,4 +1,4 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord import (
     HTTPException, 
     app_commands, 
@@ -23,10 +23,24 @@ from psql import (
 )
 from discord.ext import commands
 import discord.ext
+from helpers.birthday import check_birthdays, announce_birthday
+
 class BirthdayCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.birthday_check.start()
         
+    # Check every hour since we defined their tz, we want to announce their birthday at 12am in their tz
+    @tasks.loop(hours=1)
+    async def birthday_check():
+        logger.info("[BirthdayAnnouncer] Checking for birthdays...")
+        hits = await check_birthdays()
+        if not hits:
+            logger.info("[BirthdayAnnouncer] No birthdays found.")
+        else:
+            logger.info(f"[BirthdayAnnouncer] Found {len(hits)} birthday(s).")
+            await announce_birthday(hits)
+            
     @discord.ext.commands.has_guild_permissions(manage_guild=True)
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.command(name="setupbirthday", description="Setup birthday notifications")

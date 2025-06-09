@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 # Import from files
 import helpers.constants as constants
-from helpers.birthday import check_birthdays, announce_birthday
 from handlers.logger import logger
 from psql import (
     fetch, 
@@ -47,17 +46,6 @@ async def on_ready():
 
     logger.info(f"Logged in as {bot.user}")
     await tree.sync()
-
-# Check every hour since we defined their tz, we want to announce their birthday at 12am in their tz
-@tasks.loop(hours=1)
-async def birthday_check():
-    logger.info("[BirthdayAnnouncer] Checking for birthdays...")
-    hits = await check_birthdays()
-    if not hits:
-        logger.info("[BirthdayAnnouncer] No birthdays found.")
-    else:
-        logger.info(f"[BirthdayAnnouncer] Found {len(hits)} birthday(s).")
-        await announce_birthday(hits)
         
 # About
 @tree.command(name="about", description="About the bot.")
