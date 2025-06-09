@@ -1,6 +1,6 @@
 from discord.ext import commands
 from discord import app_commands, Interaction
-import helpers.timezonesac as tz
+from helpers.autocomplete import timezone_autocomplete
 from handlers.logger import logger
 from helpers.constants import (
     is_whitelisted,
@@ -16,7 +16,7 @@ class TimezoneCog(commands.Cog):
     @app_commands.command(name="set_timezone", description="Set your local timezone (used for /schedule)")
     @is_whitelisted()
     @app_commands.describe(time_zone="Select a timezone you'd like to offset /schedule from")
-    @app_commands.autocomplete(time_zone=tz.timezone_autocomplete)
+    @app_commands.autocomplete(time_zone=timezone_autocomplete)
     async def set_timezone(self, interaction: Interaction, time_zone: str):
         await interaction.response.defer(ephemeral=True)
         try:
