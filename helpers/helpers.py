@@ -41,7 +41,7 @@ async def setup(bot):
     logger.debug(f"twitch: {twitch} (type: {type(twitch)})")
     logger.info("Twitch object details:\n" + pprint.pformat(vars(twitch), indent=4))
     
-    eventsub = EventSubWebhook(f"{PUBLIC_URL}/twitch/eventsub", 8080, twitch, callback_loop=asyncio.get_running_loop())
+    eventsub = EventSubWebhook(f"{PUBLIC_URL}/twitch/eventsub/callback", 8080, twitch, callback_loop=asyncio.get_running_loop())
     eventsub._secret = TWITCH_WEBHOOK_SECRET
     eventsub.start()
     
