@@ -32,7 +32,7 @@ class BirthdayCog(commands.Cog):
     @app_commands.command(name="setupbirthday", description="Setup birthday notifications")
     @is_whitelisted()
     @app_commands.describe(channel="The channel used for birthdays.", role="The role to ping for those wanting to know when a birthday happens.")
-    async def birthdaysetup(interaction: discord.Interaction, channel: discord.TextChannel, role: discord.Role = None):
+    async def birthdaysetup(self, interaction: discord.Interaction, channel: discord.TextChannel, role: discord.Role = None):
         await interaction.response.defer()
         try:
             from handlers.buttons import BirthdaySetupButton
@@ -82,7 +82,7 @@ class BirthdayCog(commands.Cog):
     @is_whitelisted()
     @app_commands.describe(birthdate="Month and day you're born.", time_zone="Timezone you live in")
     @app_commands.autocomplete(time_zone=timezone_autocomplete)
-    async def setbirthday(interaction: Interaction, birthdate: str, time_zone: str):
+    async def setbirthday(self, interaction: Interaction, birthdate: str, time_zone: str):
         await interaction.response.defer()
         try:
             from helpers.birthdayparser import parse
@@ -203,7 +203,7 @@ class BirthdayCog(commands.Cog):
     @app_commands.command(name="removebirthday", description="Delete a user's birthday, effectively allowing them to use /setbirthday again.")
     @is_whitelisted()
     @app_commands.describe(user="The user to remove the birthday from.")
-    async def removebirthday(interaction: Interaction, user: Member):
+    async def removebirthday(self, interaction: Interaction, user: Member):
         await interaction.response.defer()
         try:
             existing = await fetchrow("""

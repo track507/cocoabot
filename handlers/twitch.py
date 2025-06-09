@@ -122,11 +122,10 @@ class TwitchCog(commands.Cog):
             logger.exception(f"Error fetching schedule: {e}")
             await interaction.followup.send(f"❌ Error fetching schedule: {e}", ephemeral=True)
             
-    @app_commands.command(name="status", description="Check Cocoa's Twitch status")
-    @is_whitelisted()
     @app_commands.describe(twitch_username="Select a Twitch user from this server")
     @app_commands.autocomplete(twitch_username=streamer_autocomplete)
-    async def status(interaction: discord.Interaction, twitch_username: str):
+    @app_commands.command(name="status", description="Check Cocoa's Twitch status")
+    async def status(self, interaction: discord.Interaction, twitch_username: str):
         await interaction.response.defer()
         try:
             from helpers.constants import get_twitch, get_cocoasguild
@@ -187,7 +186,7 @@ class TwitchCog(commands.Cog):
     @is_whitelisted()
     @app_commands.describe(twitch_username="Select a Twitch user from this server")
     @app_commands.autocomplete(twitch_username=streamer_autocomplete)
-    async def removenotification(interaction: discord.Interaction, twitch_username: str):
+    async def removenotification(self, interaction: discord.Interaction, twitch_username: str):
         await interaction.response.defer()
         try:
             from helpers.constants import get_twitch
@@ -227,7 +226,7 @@ class TwitchCog(commands.Cog):
     @app_commands.command(name="setlivenotifications", description="Configure Twitch live notifications.")
     @is_whitelisted()
     @app_commands.describe(twitch_username="Twitch username", role="Role to ping", channel="Channel to send notifications")
-    async def setlivenotifications(interaction: discord.Interaction, twitch_username: str, role: discord.Role, channel: discord.TextChannel):
+    async def setlivenotifications(self, interaction: discord.Interaction, twitch_username: str, role: discord.Role, channel: discord.TextChannel):
         await interaction.response.defer()
         
         try:
@@ -303,7 +302,7 @@ class TwitchCog(commands.Cog):
             
     @app_commands.command(name="liststreamers", description="List all streamers with notifications setup in this server.")
     @is_whitelisted()
-    async def liststreamers(interaction: discord.Interaction):
+    async def liststreamers(self, interaction: discord.Interaction):
         await interaction.response.defer()
         try:
             from psql import fetch
