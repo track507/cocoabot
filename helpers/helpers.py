@@ -44,11 +44,8 @@ async def setup(bot):
     eventsub = EventSubWebhook(PUBLIC_URL, 8080, twitch, callback_loop=asyncio.get_running_loop())
     eventsub._secret = TWITCH_WEBHOOK_SECRET
     Thread(target=start_eventsub_thread, args=(eventsub,), daemon=True).start()
-
     logger.info("Started Twitch EventSub webhook on port 8080 in background thread")
-    eventsub.start()
     
-    logger.info("Started Twitch EventSub webhook on port 8080")
     print(f"Eventsub secret: {eventsub._secret}")
     Thread(target=run_web_server, daemon=True).start()
     logger.info("Started FastAPI Web Server on port 8081 in background thread")
