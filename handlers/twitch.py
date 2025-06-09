@@ -63,8 +63,8 @@ class TwitchCog(commands.Cog):
             for s in segments:
                 # Parse datetime in state_time and end_time attributes (RFC 3339 format)
                 # "2025-05-09T12:00:00Z"
-                start_dt = parser.isoparse(s.start_time)
-                end_dt = parser.isoparse(s.end_time)
+                start_dt = s.start_time
+                end_dt = s.end_time
                 title = s.title
                 cat = s.category.name
                 
@@ -74,7 +74,7 @@ class TwitchCog(commands.Cog):
                 
                 start_str = start_local.strftime("%I:%M %p")
                 end_str = end_local.strftime("%I:%M %p")
-                date_key = start_local.strftime("%A, %B %d %Y")
+                date_key = start_local.strftime("%A, %B %d")
                 
                 stream_info = (
                     f"{streamEmoji} **{title}**\n"
