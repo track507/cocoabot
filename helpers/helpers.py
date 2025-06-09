@@ -1,6 +1,6 @@
 import pprint
 from twitchAPI.object.eventsub import StreamOnlineEvent, StreamOfflineEvent
-from twitchAPI.eventsub.websocket import EventSubWebsocket
+from twitchAPI.eventsub.webhook import EventSubWebhook
 from twitchAPI.type import AuthScope
 from aiohttp import ClientTimeout
 from handlers.logger import logger
@@ -41,12 +41,11 @@ async def setup(bot):
     logger.debug(f"twitch: {twitch} (type: {type(twitch)})")
     logger.info("Twitch object details:\n" + pprint.pformat(vars(twitch), indent=4))
     
-    eventsub = EventSubWebsocket(twitch)
-    await eventsub.start()
-    logger.info("Started Twitch EventSubWebsocket")
+    eventsub = EventSubWebhook(PUBLIC_URL, 8080, twitch, callback_loop=asyncio.get_running_loop())
+    logger.info("Started Twitch EventSub webhook on port 8080")
     
     Thread(target=run_web_server, daemon=True).start()
-    logger.info("Started FastAPI Web Server on port 8080 in background thread")
+    logger.info("Started FastAPI Web Server on port 8081 in background thread")
     
     await eventsub.unsubscribe_all() # remove all existing subscriptions to start fresh
     # iterate over eventSubScriptionResult.data which is a list of EventSubSubscription objects
@@ -83,6 +82,9 @@ async def initialize_twitch(twitch: Twitch):
         await twitch.authenticate_app([])
     except Exception as e:
             logger.exception("Error in initialize_twitch process")
+    
+def start_eventsub_thread(eventsub):
+    eventsub.start()
 
 def run_web_server():
     uvicorn.run(fastapi_app, host="0.0.0.0", port=8080)

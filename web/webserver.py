@@ -29,6 +29,21 @@ async def oauth_callback(request: Request):
         logger.info(f"OAuth callback error: {e}")
         return f"Error in OAuth callback: {e}"
 
+@app.post("/callback")
+async def twitch_eventsub_callback(request: Request):
+    from helpers.constants import get_eventsub
+    body = await request.body()
+    headers = dict(request.headers)
+
+    # Forward to EventSubWebhook's request handler
+    response = get_eventsub().handle_eventsub_request(body, headers)
+
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=response.headers
+    )
+
 # async func to store user in DB
 async def store_user_authentication(discord_user_id, access_token, refresh_token, expires_in):
     try:
