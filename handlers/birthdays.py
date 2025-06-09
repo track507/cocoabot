@@ -31,7 +31,7 @@ class BirthdayCog(commands.Cog):
         self.birthday_check.start()
         
     # Check every hour since we defined their tz, we want to announce their birthday at 12am in their tz
-    @tasks.loop(seconds=15)
+    @tasks.loop(hours=1)
     async def birthday_check(self):
         logger.info("[BirthdayAnnouncer] Checking for birthdays...")
         hits = await check_birthdays(self.bot)
