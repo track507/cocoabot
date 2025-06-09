@@ -66,7 +66,8 @@ class TwitchCog(commands.Cog):
                 start_dt = s.start_time
                 end_dt = s.end_time
                 title = s.title
-                cat = s.category.name
+                cat = s.category
+                name = cat.name if cat is not None else 'No Category'
                 
                 # This will be either America/Chicago etc. or UTC
                 start_local = start_dt.astimezone(ZoneInfo(user_tz))
