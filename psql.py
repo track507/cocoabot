@@ -54,6 +54,16 @@ async def init_pool():
                 timezone TEXT NOT NULL
             )
         """)
+        logger.info("User timezone table checked/created.")
+        await conn.execute("""
+            CREATE TABLE twitch_tokens (
+                discord_user_id BIGINT PRIMARY KEY,
+                access_token TEXT NOT NULL,
+                refresh_token TEXT NOT NULL,
+                expires_at TIMESTAMP NOT NULL
+            )
+        """)
+        logger.info("Twitch token table checked/created.")
 
 def get_pool():
     if _pool is None:

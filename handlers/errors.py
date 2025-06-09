@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from handlers.logger import logger
 
+# TODO: Turn this into a cog
 def setup_errors(tree):
     @tree.error
     async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):

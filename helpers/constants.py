@@ -18,7 +18,7 @@ WHITELISTED_GUILDS = {
 }
 WHITELISTED_GUILD_IDS = set(WHITELISTED_GUILDS.values())
 
-# Im sick of setting these states.
+# Im sick of setting these
 class BotState:
     def __init__(self):
         self.bot = None
@@ -27,6 +27,7 @@ class BotState:
         self.twitch = None
         self.eventsub = None
         self.tree = None
+        self.user_auth_scope = None
 
 # Global instance
 bot_state = BotState()
@@ -54,3 +55,6 @@ def get_bot():
 
 def get_tree():
     return bot_state.tree
+
+def get_twitch_auth_scope():
+    return bot_state.user_auth_scope

@@ -65,7 +65,7 @@ class BirthdayCog(commands.Cog):
                             # doesn't require server member intents but can be rate limited and slower
                             member = await interaction.guild.fetch_member(user_id)
                         except (Forbidden, HTTPException, NotFound):
-                            # On any failure → just use user_id cleanly
+                            # On any failure, just use user_id cleanly
                             username = str(user_id)
                         else:
                             username = member.display_name

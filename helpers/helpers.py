@@ -1,9 +1,11 @@
 import pprint
 from twitchAPI.object.eventsub import StreamOnlineEvent, StreamOfflineEvent
 from twitchAPI.eventsub.webhook import EventSubWebhook
+from twitchAPI.type import AuthScope
 from aiohttp import ClientTimeout
 from handlers.logger import logger
 from threading import Thread
+import uvicorn
 import discord
 import asyncio
 import helpers.constants as constants
@@ -24,6 +26,7 @@ from helpers.constants import (
     PRIVATE_GUILD_ID,
     PUBLIC_URL
 )
+from web.webserver import app as fastapi_app
 
 async def setup(bot):
     await init_pool()
@@ -32,9 +35,7 @@ async def setup(bot):
     bot.add_listener(handle_stream_offline, name="on_stream_offline")
     
     twitch = Twitch(app_id=TWITCH_CLIENT_ID, app_secret=TWITCH_CLIENT_SECRET, session_timeout=ClientTimeout(total=60))
-    assert isinstance(twitch, Twitch), "twitch is not an instance of Twitch"
-    
-    await twitch.authenticate_app([])
+    await initialize_twitch(twitch)
     
     logger.debug(f"TWITCH_WEBHOOK_SECRET: {TWITCH_WEBHOOK_SECRET} (type: {type(TWITCH_WEBHOOK_SECRET)})")
     logger.debug(f"twitch: {twitch} (type: {type(twitch)})")
@@ -42,8 +43,10 @@ async def setup(bot):
     
     eventsub = EventSubWebhook(PUBLIC_URL, 8080, twitch, callback_loop=asyncio.get_running_loop())
     Thread(target=start_eventsub_thread, args=(eventsub,), daemon=True).start()
-    
     logger.info("Started Twitch EventSub webhook on port 8080 in background thread")
+    
+    Thread(target=run_web_server, daemon=True).start()
+    logger.info("Started FastAPI Web Server on port 8081 in background thread")
     
     await eventsub.unsubscribe_all() # remove all existing subscriptions to start fresh
     # iterate over eventSubScriptionResult.data which is a list of EventSubSubscription objects
@@ -71,8 +74,21 @@ async def setup(bot):
     er.setup_errors(bot.tree)
     logger.info(f"Setup complete.")
     
+async def initialize_twitch(twitch: Twitch):
+    try:
+        from twitchAPI.type import AuthScope as AS
+        USER_AUTH_SCOPES=[AS.CLIPS_EDIT]
+        constants.bot_state.user_auth_scope = USER_AUTH_SCOPES
+        assert isinstance(twitch, Twitch), "twitch is not an instance of Twitch"
+        await twitch.authenticate_app([])
+    except Exception as e:
+            logger.exception("Error in initialize_twitch process")
+    
 def start_eventsub_thread(eventsub):
     eventsub.start()
+
+def run_web_server():
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=8081)
     
 async def handle_stream_online(event: StreamOnlineEvent):
     data = event.event

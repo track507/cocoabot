@@ -211,7 +211,7 @@ class TestsCog(commands.Cog):
                 title=f"{personEmoji} Today is the following user(s) birthdays!",
                 color=discord.Color.gold()
             )
-            line = f"{member.mention}"
+            line = f"{member.mention} \u2022 {hit['birthdate']}"
             embed.add_field(
                 name="\u200b",
                 value=line,

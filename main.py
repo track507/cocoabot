@@ -495,7 +495,7 @@ async def about(interaction: discord.Interaction):
             name=f"{shyEmoji} Bugs",
             value=(
                 "If you encounter any bugs, please either create an issue with the `bug` label on "
-                "[GitHub](https://github.com/track507/cocoabot/issues) or use the `/bug` command *(coming soon)*."
+                "[GitHub](https://github.com/track507/cocoabot/issues) or use the `/bug` command."
             ),
             inline=False
         )
@@ -503,7 +503,7 @@ async def about(interaction: discord.Interaction):
             name="<:cocoascontroller:1378540036437573734> Features & Suggestions",
             value=(
                 "Have ideas for new features? Open an issue with the `enhancement` label on "
-                "[GitHub](https://github.com/track507/cocoabot/issues) or use the `/feature` command *(coming soon)*."
+                "[GitHub](https://github.com/track507/cocoabot/issues) or use the `/feature` command."
             ),
             inline=False
         )
@@ -527,7 +527,7 @@ async def about(interaction: discord.Interaction):
             ),
             inline=False
         )
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=False)
     except Exception as e:
         logger.exception("About failed")
         await interaction.followup.send(f"❌ About failed: `{str(e)}`", ephemeral=True)
