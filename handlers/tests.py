@@ -25,7 +25,7 @@ class TestsCog(commands.Cog):
     
     # Admin debugs.
     @discord.ext.commands.has_guild_permissions(manage_guild=True)
-    @discord.app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.command(name="testtwitch", description="Test Twitch API and EventSub integration.")
     @is_whitelisted()
     async def testtwitch(self, interaction: discord.Interaction):
@@ -129,7 +129,7 @@ class TestsCog(commands.Cog):
             await interaction.followup.send(f"❌ Twitch test failed: `{str(e)}`", ephemeral=True)
 
     @discord.ext.commands.has_guild_permissions(manage_guild=True)
-    @discord.app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.command(name="testbirthday", description="Test birthday integration.")
     @is_whitelisted()
     async def testbirthday(self, interaction: discord.Interaction):

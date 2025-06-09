@@ -121,6 +121,209 @@ class TwitchCog(commands.Cog):
         except Exception as e:
             logger.exception(f"Error fetching schedule: {e}")
             await interaction.followup.send(f"❌ Error fetching schedule: {e}", ephemeral=True)
+            
+    @app_commands.command(name="status", description="Check Cocoa's Twitch status")
+    @is_whitelisted()
+    @app_commands.describe(twitch_username="Select a Twitch user from this server")
+    @app_commands.autocomplete(twitch_username=streamer_autocomplete)
+    async def status(interaction: discord.Interaction, twitch_username: str):
+        await interaction.response.defer()
+        try:
+            from helpers.constants import get_twitch, get_cocoasguild
+            twitch = get_twitch()
+            cocoasguild = get_cocoasguild()
+            user = await first(twitch.get_users(logins=[twitch_username]))
+            if not user:
+                await interaction.followup.send("❌ Twitch user not found.", ephemeral=True)
+                return
+
+            stream = None
+            async for s in twitch.get_streams(user_id=[user.id]):
+                stream = s
+                break
+
+            streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else ''
+            personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else ''
+
+            if stream:
+                embed = discord.Embed(
+                    title=f"🩷 {stream.user_name} is LIVE",
+                    url=f"https://twitch.tv/{user.login}",
+                    color=discord.Color(value=0xf8e7ef)
+                )
+                embed.add_field(
+                    name=f"{streamEmoji} Title:",
+                    value=stream.title or "No stream title found",
+                    inline=False
+                )
+                embed.add_field(
+                    name=f"<:cocoascontroller:1378540036437573734> Game:",
+                    value=stream.game_name or "Unknown",
+                    inline=False
+                )
+                embed.add_field(
+                    name=f"{personEmoji} Watch Now:",
+                    value=f"https://twitch.tv/{user.login}",
+                    inline=False
+                )
+                embed.set_thumbnail(url=stream.thumbnail_url.replace("{width}", "320").replace("{height}", "180"))
+
+            else:
+                embed = discord.Embed(
+                    title=f"🩷 {user.display_name} is OFFLINE",
+                    url=f"https://twitch.tv/{user.login}",
+                    color=discord.Color.greyple()
+                )
+
+            await interaction.followup.send(embed=embed, ephemeral=False)
+
+        except Exception as e:
+            logger.exception("Error in /status command")
+            await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
+            
+    @discord.ext.commands.has_guild_permissions(manage_guild=True)
+    @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.command(name="removenotification", description="Remove Twitch live notification.")
+    @is_whitelisted()
+    @app_commands.describe(twitch_username="Select a Twitch user from this server")
+    @app_commands.autocomplete(twitch_username=streamer_autocomplete)
+    async def removenotification(interaction: discord.Interaction, twitch_username: str):
+        await interaction.response.defer()
+        try:
+            from helpers.constants import get_twitch
+            from psql import execute
+            twitch = get_twitch()
+            user = await first(twitch.get_users(logins=[twitch_username]))
+            if not user or not user.id:
+                await interaction.followup.send("❌ Twitch user not found.", ephemeral=True)
+                return
+
+            row = await fetchrow(
+                "SELECT 1 FROM notification WHERE broadcaster_id = $1 AND guild_id = $2",
+                str(user.id),
+                interaction.guild.id
+            )
+            if not row:
+                await interaction.followup.send(f"⚠️ No notification found for {user.display_name}.", ephemeral=False)
+                return
+
+            await execute(
+                "DELETE FROM notification WHERE broadcaster_id = $1 AND guild_id = $2",
+                str(user.id),
+                interaction.guild.id
+            )
+            subs = await twitch.get_eventsub_subscriptions()
+            for sub in subs.data:
+                if sub.type in ('stream.online', 'stream.offline') and sub.condition.get('broadcaster_user_id') == user.id:
+                    await twitch.delete_eventsub_subscription(sub.id)
+            await interaction.followup.send(f"✅ Removed notifications for {user.display_name}.", ephemeral=False)
+
+        except Exception as e:
+            logger.exception("Error in removenotification")
+            await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
+            
+    @discord.ext.commands.has_guild_permissions(manage_guild=True)
+    @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.command(name="setlivenotifications", description="Configure Twitch live notifications.")
+    @is_whitelisted()
+    @app_commands.describe(twitch_username="Twitch username", role="Role to ping", channel="Channel to send notifications")
+    async def setlivenotifications(interaction: discord.Interaction, twitch_username: str, role: discord.Role, channel: discord.TextChannel):
+        await interaction.response.defer()
+        
+        try:
+            from helpers.constants import get_twitch, get_eventsub
+            from helpers.helpers import handle_stream_offline, handle_stream_online
+            from psql import execute
+            user = await first(get_twitch().get_users(logins=[twitch_username]))
+            """
+            Example response:
+            TwitchUser(
+                id=113142538, 
+                login=lxchet, 
+                display_name=Lxchet, 
+                type=, 
+                broadcaster_type=, 
+                description=Siege and Val all the wayDoing this for fun, 
+                profile_image_url=https://static-cdn.jtvnw.net/jtv_user_pictures/95500c7f-0536-4361-98cf-ead573d97315-profile_image-300x300.png, 
+                offline_image_url=, 
+                view_count=0, 
+                email=None, 
+                created_at=2016-01-18 05:42:39+00:00)
+            """
+            # print(user)
+            if not user.id or not user.login:
+                await interaction.followup.send("Twitch user not found.", ephemeral=False)
+                return
+
+            broadcaster_id = user.id
+            twitch_login = user.login
+            twitch_name = user.display_name
+            twitch_link = f"https://twitch.tv/{twitch_login}"
+            
+            # print debug
+            logger.debug(f"broadcaster_id: {broadcaster_id}, twitch_login: {twitch_login}, twitch_name: {twitch_name}, twitch_link: {twitch_link}")
+            
+            # check if broadcaster_id already exists
+            existing = await fetchrow(
+                "SELECT * FROM notification WHERE broadcaster_id = $1 AND guild_id = $2",
+                broadcaster_id,
+                interaction.guild.id
+            )
+            if existing:
+                await interaction.followup.send(f"Notifications for {twitch_name} already setup. Use /removenotification {twitch_name} before attempting to use this command again.", ephemeral=False)
+                return
+            
+            # store in database
+            await execute("""
+                INSERT INTO notification (broadcaster_id, twitch_name, twitch_link, role_id, channel_id, guild_id)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            """,
+                str(broadcaster_id),
+                twitch_name,
+                twitch_link,
+                role.id,
+                channel.id,
+                interaction.guild.id,
+            )
+            
+            await get_eventsub().listen_stream_online(
+                broadcaster_user_id=broadcaster_id,
+                callback=handle_stream_online
+            )
+            await get_eventsub().listen_stream_offline(
+                broadcaster_user_id=broadcaster_id,
+                callback=handle_stream_offline
+            )
+            
+            await interaction.followup.send(f"Notifications for {twitch_name} setup successfully.", ephemeral=False)
+            
+        except Exception as e:
+            logger.exception("Error in setlivenotifications")
+            await interaction.followup.send(f"Error: {e}", ephemeral=True)
+            
+    @app_commands.command(name="liststreamers", description="List all streamers with notifications setup in this server.")
+    @is_whitelisted()
+    async def liststreamers(interaction: discord.Interaction):
+        await interaction.response.defer()
+        try:
+            from psql import fetch
+            rows = await fetch(
+                "SELECT twitch_name, twitch_link FROM notification WHERE guild_id = $1",
+                interaction.guild.id
+            )
+            if not rows:
+                await interaction.followup.send("There are no streamers with notifications set up in this server.", ephemeral=False)
+                return
+            
+            msg = "**📺 Streamers with notifications enabled in this server:**\n"
+            for row in rows:
+                msg += f"- `{row['twitch_name']}` — <{row['twitch_link']}>\n"
+
+            await interaction.followup.send(msg, ephemeral=False)
+        
+        except Exception as e:
+            logger.exception("Error in liststreamers")
+            await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
     
     # use twitchAPI oAuth to generate an oAuth link and use a refresh_token to auto refresh
     @app_commands.command(name="authorizetwitch", description="Authorize Twitch with oAuth")
