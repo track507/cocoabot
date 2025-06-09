@@ -41,7 +41,7 @@ async def setup(bot):
     logger.debug(f"twitch: {twitch} (type: {type(twitch)})")
     logger.info("Twitch object details:\n" + pprint.pformat(vars(twitch), indent=4))
     
-    eventsub = EventSubWebhook(PUBLIC_URL, 8080, twitch, callback_loop=asyncio.get_running_loop())
+    eventsub = EventSubWebhook(PUBLIC_URL, 8081, twitch, callback_loop=asyncio.get_running_loop())
     Thread(target=start_eventsub_thread, args=(eventsub,), daemon=True).start()
     logger.info("Started Twitch EventSub webhook on port 8080 in background thread")
     
@@ -88,7 +88,7 @@ def start_eventsub_thread(eventsub):
     eventsub.start()
 
 def run_web_server():
-    uvicorn.run(fastapi_app, host="0.0.0.0", port=8081)
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=8080)
     
 async def handle_stream_online(event: StreamOnlineEvent):
     data = event.event
