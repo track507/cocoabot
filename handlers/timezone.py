@@ -6,7 +6,8 @@ from helpers.constants import (
     is_whitelisted,
 )
 from psql import (
-    execute
+    execute,
+    fetchrow
 )
 
 class TimezoneCog(commands.Cog):
@@ -21,13 +22,14 @@ class TimezoneCog(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         try:
             await execute("""
-                INSERT INTO user_timezone (user_id, timezone)
-                VALUES ($1, $2)
+                UPDATE user_timezone
+                SET timezone = $1
+                WHERE user_id = $2
             """,
-                interaction.user.id,
-                time_zone
+                time_zone,
+                interaction.user.id
             )
-            await interaction.followup.send(f"Your timezone has been set to {time_zone}")
+            await interaction.followup.send(f"Your timezone has been updated to {time_zone}")
         except Exception as e:
             logger.exception("Error in /set_timezone command")
             await interaction.followup.send(f"❌ Error: {e}")

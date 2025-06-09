@@ -69,7 +69,12 @@ class TwitchCog(commands.Cog):
                 end_dt = s.end_time
                 title = s.title
                 cat = s.category
+                recurring = s.is_recurring
                 cat_name = cat.name if cat is not None else 'No Category'
+
+                recurrence_text = ""
+                if recurring:
+                    recurrence_text = "(Recurring)"
                 
                 # This will be either America/Chicago etc. or UTC
                 start_local = start_dt.astimezone(ZoneInfo(user_tz))
@@ -82,7 +87,7 @@ class TwitchCog(commands.Cog):
                 stream_info = (
                     f"{streamEmoji} **{title}**\n"
                     f"  <:cocoascontroller:1378540036437573734> Playing: {cat_name}\n"
-                    f"  {boba} From: {start_str} → {end_str}\n"
+                    f"  {boba} From: {start_str} → {end_str} {recurrence_text}\n"
                 )
                 
                 if date_key not in groups:
