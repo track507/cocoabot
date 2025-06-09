@@ -79,7 +79,7 @@ class TwitchCog(commands.Cog):
                 
                 stream_info = (
                     f"{streamEmoji} **{title}**\n"
-                    f"  <:cocoascontroller:1378540036437573734> Playing: {cat}\n"
+                    f"  <:cocoascontroller:1378540036437573734> Playing: {name}\n"
                     f"  {boba} From: {start_str} → {end_str}\n"
                 )
                 
@@ -108,8 +108,8 @@ class TwitchCog(commands.Cog):
                 )
                 pages.append(embed)
                 
-            from handlers.buttons import PaginatorView
-            view = PaginatorView(interaction, pages)
+            from handlers.buttons import PaginatorEmbedView
+            view = PaginatorEmbedView(interaction, pages)
             await interaction.followup.send(embed=pages[0], view=view, ephemeral=False)
         except Exception as e:
             logger.exception(f"Error fetching schedule: {e}")
