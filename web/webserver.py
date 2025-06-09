@@ -66,6 +66,8 @@ async def twitch_eventsub_callback(request: Request):
     )
 
     expected_signature = "sha256=" + computed_hmac.hexdigest()
+    print(f"Expected signature: {expected_signature}")
+    print(f"Message signature: {message_signature}")
     if not hmac.compare_digest(expected_signature, message_signature):
         logger.warning("Invalid Twitch EventSub signature")
         return Response(status_code=403)
