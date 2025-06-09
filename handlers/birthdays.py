@@ -261,7 +261,7 @@ class BirthdayCog(commands.Cog):
             CHUNK_SIZE = 25
             pages = []
 
-            from handlers.buttons import PaginatorView
+            from handlers.buttons import PaginatorEmbedView
             for i in range(0, len(hits), CHUNK_SIZE):
                 chunk = hits[i:i + CHUNK_SIZE]
 
@@ -299,7 +299,7 @@ class BirthdayCog(commands.Cog):
                 pages.append(embed)
 
             # Send first page with paginator view
-            await interaction.followup.send(embed=pages[0], view=PaginatorView(interaction, pages), ephemeral=False)
+            await interaction.followup.send(embed=pages[0], view=PaginatorEmbedView(interaction, pages), ephemeral=False)
                 
         except Exception as e:
             logger.exception("Error in /listbirthdays command")
