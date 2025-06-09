@@ -241,15 +241,35 @@ class PaginatorEmbedView(View):
         super().__init__(timeout=60)
         self.pages = pages
         self.current = 0
-        
-    @discord.ui.button(label='⏮️', style=ButtonStyle.grey)
-    async def previous(self, interaction: Interaction, button: Button):
+
+        # add buttons for reference
+        self.previous_button = discord.ui.Button(label='⏮️', style=ButtonStyle.grey)
+        self.next_button = discord.ui.Button(label='⏭️', style=ButtonStyle.grey)
+
+        self.previous_button.callback = self.previous
+        self.next_button.callback = self.next
+
+        self.add_item(self.previous_button)
+        self.add_item(self.next_button)
+
+        # Initialize button states
+        self.update_buttons()
+
+    async def previous(self, interaction: Interaction):
         if self.current > 0:
             self.current -= 1
+            self.update_buttons()
             await interaction.response.edit_message(embed=self.pages[self.current], view=self)
-            
-    @discord.ui.button(label='⏭️', style=ButtonStyle.grey)
-    async def next(self, interaction: Interaction, button: Button):
+
+    async def next(self, interaction: Interaction):
         if self.current < len(self.pages) - 1:
             self.current += 1
+            self.update_buttons()
             await interaction.response.edit_message(embed=self.pages[self.current], view=self)
+
+    def update_buttons(self):
+        # Disable 'previous' if on first page
+        self.previous_button.disabled = self.current == 0
+
+        # Disable 'next' if on last page
+        self.next_button.disabled = self.current == len(self.pages) - 1

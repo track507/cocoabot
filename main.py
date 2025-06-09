@@ -347,7 +347,7 @@ async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zon
             )
             embed.add_field(
                 name="Current Birthday",
-                value=f"Date: {existing['birthdate']}\nTimezone: {existing['timezone']}",
+                value=f"Date: {existing['birthdate']}\nTimezone: {existing['timezone'].replace("_", " ")}",
                 inline=False
             )
             embed.add_field(
@@ -361,7 +361,7 @@ async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zon
                 view = BirthdayUpdateButton(interaction, birthdate, time_zone)
                 embed.add_field(
                     name="New Birthday You Are Setting",
-                    value=f"Date: {birthdate}\nTimezone: {time_zone}",
+                    value=f"Date: {birthdate}\nTimezone: {time_zone.replace("_", " ")}",
                     inline=False
                 )
                 await interaction.followup.send(
@@ -378,7 +378,7 @@ async def setbirthday(interaction: discord.Interaction, birthdate: str, time_zon
                 )
                 embed.add_field(
                     name="Current Birthday",
-                    value=f"Date: {existing['birthdate']}\nTimezone: {existing['timezone']}",
+                    value=f"Date: {existing['birthdate']}\nTimezone: {existing['timezone'].replace("_", " ")}",
                     inline=False
                 )
                 embed.add_field(
