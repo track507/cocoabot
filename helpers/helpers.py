@@ -53,6 +53,14 @@ async def setup(bot):
     # iterate over eventSubScriptionResult.data which is a list of EventSubSubscription objects
     # and each EventSubSubscription object has an id and a condition attribute which is a dictionary [str, str]
 
+    constants.bot_state.bot = bot
+    constants.bot_state.twitch = twitch
+    constants.bot_state.eventsub = eventsub
+    constants.bot_state.privateguild = discord.utils.get(bot.guilds, id=PRIVATE_GUILD_ID)
+    constants.bot_state.cocoasguild = discord.utils.get(bot.guilds, id=COCOAS_GUILD_ID)
+    constants.bot_state.tree = bot.tree
+    er.setup_errors(bot.tree)
+    
     rows = await fetch("SELECT broadcaster_id FROM notification")
     for row in rows:
         await eventsub.listen_stream_online(
@@ -65,14 +73,6 @@ async def setup(bot):
         )
         
     logger.info(f"Finished registering {len(rows)} subscriptions.")
-    
-    constants.bot_state.bot = bot
-    constants.bot_state.twitch = twitch
-    constants.bot_state.eventsub = eventsub
-    constants.bot_state.privateguild = discord.utils.get(bot.guilds, id=PRIVATE_GUILD_ID)
-    constants.bot_state.cocoasguild = discord.utils.get(bot.guilds, id=COCOAS_GUILD_ID)
-    constants.bot_state.tree = bot.tree
-    er.setup_errors(bot.tree)
     logger.info(f"Setup complete.")
     
 async def initialize_twitch(twitch: Twitch):
