@@ -334,7 +334,7 @@ class TwitchCog(commands.Cog):
         await interaction.response.defer()
         try:
             from helpers.constants import get_twitch, get_cocoasguild
-            from psql import fetch, execute
+            from psql import fetchrow, execute
             twitch = get_twitch()
             cocoasguild = get_cocoasguild()
             user = await first(twitch.get_users(logins=[twitch_username]))
@@ -351,7 +351,7 @@ class TwitchCog(commands.Cog):
                 broadcaster_id = user.id
                 guild_id = interaction.guild.id
                 title = stream.title.strip() if stream.title else "No stream title found"
-                row = await fetch(
+                row = await fetchrow(
                     "SELECT channel_id, role_id FROM notification WHERE broadcaster_id = $1 AND guild_id = $2",
                     broadcaster_id,
                     guild_id
