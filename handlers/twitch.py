@@ -324,6 +324,98 @@ class TwitchCog(commands.Cog):
             logger.exception("Error in liststreamers")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
     
+    @discord.ext.commands.has_guild_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.command(name="alert", description="Manually alert users when a streamer goes live")
+    @is_whitelisted()
+    @app_commands.describe(twitch_username="Twitch username")
+    async def alert(self, interaction: discord.Interaction, twitch_username: str):
+        await interaction.response.defer()
+        try:
+            from helpers.constants import get_twitch, get_cocoasguild
+            from psql import fetch, execute
+            twitch = get_twitch()
+            cocoasguild = get_cocoasguild()
+            user = await first(twitch.get_users(logins=[twitch_username]))
+            if not user:
+                await interaction.followup.send("❌ Twitch user not found.", ephemeral=True)
+                return
+
+            stream = None
+            async for s in twitch.get_streams(user_id=[user.id]):
+                stream = s
+                break
+            if stream:
+                # Build stream info
+                broadcaster_id = user.id
+                guild_id = interaction.guild.id
+                title = stream.title.strip() if stream.title else "No stream title found"
+                row = await fetch(
+                    "SELECT channel_id, role_id FROM notification WHERE broadcaster_id = $1 AND guild_id = $2",
+                    broadcaster_id,
+                    guild_id
+                )
+                
+                if not row:
+                    await interaction.followup.send("No notification configuration can be found for this server", ephemeral=True)
+                    return 
+                
+                # Set to false so the next stream.online event can register correctly.
+                await execute(
+                    "UPDATE notification SET is_live = FALSE WHERE broadcaster_id = $1 AND guild_id = $2",
+                    broadcaster_id,
+                    guild_id
+                )
+                
+                # Prepare embed
+                personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else None
+                streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else None
+
+                embed = discord.Embed(
+                    title=f"🩷 {user.display_name} is LIVE",
+                    url=f"https://twitch.tv/{user.login}",
+                    color=discord.Color(value=0xf8e7ef)
+                )
+                embed.add_field(
+                    name=f"{streamEmoji or ''} Title:",
+                    value=title,
+                    inline=False
+                )
+                embed.add_field(
+                    name=f"<:cocoascontroller:1378540036437573734> Game:",
+                    value=stream.game_name or "Unknown",
+                    inline=False
+                )
+                embed.add_field(
+                    name=f"{personEmoji or ''} Watch Now:",
+                    value=f"https://twitch.tv/{user.login}",
+                    inline=False
+                )
+                embed.set_footer(text="Stream started just now!")
+                embed.timestamp = stream.started_at
+                embed.set_thumbnail(
+                    url=stream.thumbnail_url.replace("{width}", "320").replace("{height}", "180")
+                )
+                
+                channel_id = int(row["channel_id"])
+                role_id = int(row["role_id"])
+                
+                # Get channel in the current guild
+                channel = interaction.guild.get_channel(channel_id)
+                if not channel:
+                    await interaction.followup.send("Channel could not be found.", ephemeral=True)
+                    return
+
+                await channel.send(
+                    content=f"<@&{role_id}> https://twitch.tv/{user.login}",
+                    embed=embed
+                )
+                await interaction.followup.send("Alert sent to this server.", ephemeral=True)
+        except Exception as e:
+            logger.exception("Error in alert")
+            await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
+                
+    
     # # use twitchAPI oAuth to generate an oAuth link and use a refresh_token to auto refresh
     # @app_commands.command(name="authorizetwitch", description="Authorize Twitch with oAuth")
     # @is_whitelisted()

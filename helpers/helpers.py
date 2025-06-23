@@ -78,10 +78,18 @@ async def setup(bot):
 async def initialize_twitch(twitch: Twitch):
     try:
         from twitchAPI.type import AuthScope as AS
+        from twitchAPI.helper import first
         USER_AUTH_SCOPES=[AS.CLIPS_EDIT]
         constants.bot_state.user_auth_scope = USER_AUTH_SCOPES
         assert isinstance(twitch, Twitch), "twitch is not an instance of Twitch"
         await twitch.authenticate_app([])
+        current_subs = await twitch.get_eventsub_subscriptions()
+        subs = current_subs.data
+        if len(subs) == 0 or current_subs.total == 0: return
+        for sub in subs:
+            user_info = await first(twitch.get_users(user_ids=[sub.id]))
+            display_name = user_info.display_name
+            logger.info(f"Broadcaster: {sub.id}, {display_name}")
     except Exception as e:
             logger.exception("Error in initialize_twitch process")
 
