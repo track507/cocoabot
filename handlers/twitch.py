@@ -412,6 +412,7 @@ class TwitchCog(commands.Cog):
                     embed=embed
                 )
                 await interaction.followup.send("Alert sent to this server.", ephemeral=True)
+                return
                 
             await interaction.followup.send(f"{user.display_name} is not currently live.")
         except Exception as e:
