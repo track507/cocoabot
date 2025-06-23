@@ -87,9 +87,17 @@ async def initialize_twitch(twitch: Twitch):
         subs = current_subs.data
         if len(subs) == 0 or current_subs.total == 0: return
         for sub in subs:
-            user_info = await first(twitch.get_users(user_ids=[sub.id]))
-            display_name = user_info.display_name
-            logger.info(f"Broadcaster: {sub.id}, {display_name}")
+            user_id = sub.condition.get('broadcaster_user_id') or sub.condition.get('user_id')
+            if not user_id:
+                logger.warning(f"Subscription {sub.id} has no broadcaster/user ID in condition")
+                continue
+
+            user_info = await first(twitch.get_users(user_ids=[user_id]))
+            if user_info:
+                display_name = user_info.display_name
+                logger.info(f"Broadcaster: {user_id}, {display_name}")
+            else:
+                logger.info(f"Broadcaster: {user_id}, user not found")
     except Exception as e:
             logger.exception("Error in initialize_twitch process")
 
