@@ -413,7 +413,7 @@ class TwitchCog(commands.Cog):
                 )
                 await interaction.followup.send("Alert sent to this server.", ephemeral=True)
                 
-            await interaction.followup.send(f"{user} is not currently live.")
+            await interaction.followup.send(f"{user.display_name} is not currently live.")
         except Exception as e:
             logger.exception("Error in alert")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
