@@ -329,6 +329,7 @@ class TwitchCog(commands.Cog):
     @app_commands.command(name="alert", description="Manually alert users when a streamer goes live")
     @is_whitelisted()
     @app_commands.describe(twitch_username="Twitch username")
+    @app_commands.autocomplete(twitch_username=streamer_autocomplete)
     async def alert(self, interaction: discord.Interaction, twitch_username: str):
         await interaction.response.defer()
         try:
