@@ -73,6 +73,9 @@ async def setup(bot):
         )
         
     logger.info(f"Finished registering {len(rows)} subscriptions.")
+    if not all([constants.get_bot(), constants.get_twitch(), constants.get_eventsub()]):
+        logger.error("Setup incomplete - critical components missing")
+        raise RuntimeError("Bot state not properly initialized")
     logger.info(f"Setup complete.")
     
 async def initialize_twitch(twitch: Twitch):
@@ -114,6 +117,10 @@ async def handle_stream_online(event: StreamOnlineEvent):
 
     async def process():
         try:
+            
+            if not constants.get_twitch() or not constants.get_bot():
+                logger.error("Bot state not properly initialized when handling stream online event")
+                return
             is_already_live = await fetchval(
                 "SELECT is_live FROM notification WHERE broadcaster_id = $1",
                 broadcaster_id
