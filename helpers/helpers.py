@@ -26,7 +26,7 @@ from helpers.constants import (
     PRIVATE_GUILD_ID,
     PUBLIC_URL
 )
-from web.webserver import app as fastapi_app
+# from web.webserver import app as fastapi_app
 
 async def setup(bot):
     
@@ -46,8 +46,8 @@ async def setup(bot):
     logger.info("Started Twitch EventSub webhook on port 8080 in background thread")
     
     print(f"Eventsub secret: {eventsub._secret}")
-    Thread(target=run_web_server, daemon=True).start()
-    logger.info("Started FastAPI Web Server on port 8081 in background thread")
+    # Thread(target=run_web_server, daemon=True).start()
+    # logger.info("Started FastAPI Web Server on port 8081 in background thread")
     
     await eventsub.unsubscribe_all() # remove all existing subscriptions to start fresh
     # iterate over eventSubScriptionResult.data which is a list of EventSubSubscription objects
@@ -96,8 +96,8 @@ async def initialize_twitch(twitch: Twitch):
 def start_eventsub_thread(eventsub):
     eventsub.start()
 
-def run_web_server():
-    uvicorn.run(fastapi_app, host="0.0.0.0", port=8081)
+# def run_web_server():
+#     uvicorn.run(fastapi_app, host="0.0.0.0", port=8081)
     
 async def handle_stream_online(event: StreamOnlineEvent):
     data = event.event
