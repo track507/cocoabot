@@ -27,6 +27,7 @@ load_dotenv()
 """
 
 intents = discord.Intents.default()
+intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 

@@ -39,3 +39,15 @@ async def timezone_autocomplete(interaction: Interaction, current: str) -> list[
         app_commands.Choice(name=tz, value=tz)
         for tz in filtered[:25]
     ]
+    
+# async def video_types_autocomplete(interaction: Interaction, current: str) -> list[app_commands.Choice[str]]:
+#     types = {
+#         "archive" : "Get VOD's",
+#         "highlights" : "Get Highlights",
+#         "upload" : "Get videos uploaded by cocoakissies"
+#     }
+    
+#     return [
+#         app_commands.Choice(name=desc, value=type)
+#         for type, desc in types
+#     ]

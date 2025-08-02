@@ -72,10 +72,21 @@ async def setup(bot):
             callback=handle_stream_offline
         )
         
+    logger.info("Validating bot state...")
+    required_components = [
+        ("bot", constants.get_bot()),
+        ("twitch", constants.get_twitch()),
+        ("eventsub", constants.get_eventsub()),
+        ("cocoasguild", constants.get_cocoasguild()),
+        ("tree", constants.get_tree())
+    ]
+    
+    missing = [name for name, component in required_components if component is None]
+    if missing:
+        raise RuntimeError(f"Setup incomplete - missing components: {missing}")
+    
+    logger.info("All bot components properly initialized")
     logger.info(f"Finished registering {len(rows)} subscriptions.")
-    if not all([constants.get_bot(), constants.get_twitch(), constants.get_eventsub()]):
-        logger.error("Setup incomplete - critical components missing")
-        raise RuntimeError("Bot state not properly initialized")
     logger.info(f"Setup complete.")
     
 async def initialize_twitch(twitch: Twitch):
@@ -117,9 +128,8 @@ async def handle_stream_online(event: StreamOnlineEvent):
 
     async def process():
         try:
-            
-            if not constants.get_twitch() or not constants.get_bot():
-                logger.error("Bot state not properly initialized when handling stream online event")
+            if not all([constants.get_twitch(), constants.get_bot(), constants.get_cocoasguild()]):
+                logger.error(f"Bot state not initialized when handling stream online for {broadcaster_id}")
                 return
             is_already_live = await fetchval(
                 "SELECT is_live FROM notification WHERE broadcaster_id = $1",

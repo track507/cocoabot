@@ -1,11 +1,11 @@
 import discord.ext
 from discord.ext import commands
 from discord import app_commands
-from helpers.autocomplete import streamer_autocomplete
+from helpers.autocomplete import streamer_autocomplete#, video_types_autocomplete
 from dateutil import parser
 from zoneinfo import ZoneInfo
 from twitchAPI.helper import first
-from twitchAPI.type import TwitchResourceNotFound
+from twitchAPI.type import TwitchResourceNotFound, VideoType
 from twitchAPI.oauth import UserAuthenticator
 from helpers.constants import (
     is_whitelisted,
@@ -128,7 +128,6 @@ class TwitchCog(commands.Cog):
     async def status(self, interaction: discord.Interaction, twitch_username: str):
         await interaction.response.defer()
         try:
-            from helpers.constants import get_twitch, get_cocoasguild
             twitch = get_twitch()
             cocoasguild = get_cocoasguild()
             user = await first(twitch.get_users(logins=[twitch_username]))
@@ -189,7 +188,6 @@ class TwitchCog(commands.Cog):
     async def removenotification(self, interaction: discord.Interaction, twitch_username: str):
         await interaction.response.defer()
         try:
-            from helpers.constants import get_twitch
             from psql import execute
             twitch = get_twitch()
             user = await first(twitch.get_users(logins=[twitch_username]))
@@ -230,7 +228,7 @@ class TwitchCog(commands.Cog):
         await interaction.response.defer()
         
         try:
-            from helpers.constants import get_twitch, get_eventsub
+            from helpers.constants import get_eventsub
             from helpers.helpers import handle_stream_offline, handle_stream_online
             from psql import execute
             user = await first(get_twitch().get_users(logins=[twitch_username]))
@@ -419,7 +417,25 @@ class TwitchCog(commands.Cog):
             logger.exception("Error in alert")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
                 
-    
+    # @app_commands.command(name="videos", description="Get cocoakissies latest video's!")
+    # @is_whitelisted()
+    # @app_commands.describe(type="Video type (optional): archive (VOD's), highlights, upload")
+    # @app_commands.autocomplete(type=video_types_autocomplete)
+    # async def videos(self, interaction: discord.Interaction, twitch_username: str, type=VideoType.All):
+    #     await interaction.response.defer()
+    #     try:
+    #         twitch = get_twitch()
+    #         cocoasguild = get_cocoasguild()
+    #         user = await first(twitch.get_users(logins=["cocoakissies"]))
+            
+    #         if not user.id or not user.login:
+    #             await interaction.followup.send("Twitch user not found.", ephemeral=True)
+    #             return
+    #         # By default, it already sorts by time
+    #         videos = await twitch.get_videos(user_id=user.id, first=25, video_type=type)
+    #     except Exception as e:
+    #         logger.exception("Error in videos")
+    #         await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
     # # use twitchAPI oAuth to generate an oAuth link and use a refresh_token to auto refresh
     # @app_commands.command(name="authorizetwitch", description="Authorize Twitch with oAuth")
     # @is_whitelisted()
