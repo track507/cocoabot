@@ -33,12 +33,13 @@ class BirthdayCog(commands.Cog):
     # Check every hour since we defined their tz, we want to announce their birthday at 12am in their tz
     @tasks.loop(hours=1)
     async def birthday_check(self):
-        logger.info("[BirthdayAnnouncer] Checking for birthdays...")
+        # logger.info("[BirthdayAnnouncer] Checking for birthdays...")
         hits = await check_birthdays(self.bot)
         if not hits:
-            logger.info("[BirthdayAnnouncer] No birthdays found.")
+            # logger.info("[BirthdayAnnouncer] No birthdays found.")
+            pass
         else:
-            logger.info(f"[BirthdayAnnouncer] Found {len(hits)} birthday(s).")
+            # logger.info(f"[BirthdayAnnouncer] Found {len(hits)} birthday(s).")
             await announce_birthday(self.bot, hits)
     
     @birthday_check.before_loop
@@ -137,7 +138,7 @@ class BirthdayCog(commands.Cog):
                 )
                 embed.add_field(
                     name="Current Birthday",
-                    value=f"Date: {existing['birthdate']}\nTimezone: {existing['timezone'].replace("_", " ")}",
+                    value=f"Date: {existing['birthdate']}",
                     inline=False
                 )
                 embed.add_field(
@@ -199,7 +200,7 @@ class BirthdayCog(commands.Cog):
             )
             embed.add_field(
                 name="Birthday",
-                value=f"Date: {birthdate}\nTimezone: {time_zone}",
+                value=f"Date: {birthdate}",
                 inline=False
             )
             

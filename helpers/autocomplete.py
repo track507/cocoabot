@@ -17,10 +17,16 @@ async def command_autocomplete(interaction: Interaction, current: str) -> list[a
     return choices[:25]
 
 async def streamer_autocomplete(interaction: Interaction, current: str) -> list[app_commands.Choice[str]]:
-    rows = await fetch(
-        "SELECT twitch_name FROM notification WHERE guild_id = $1",
-        interaction.guild.id
-    )
+    if not interaction.guild:
+        return []
+    
+    try:
+        rows = await fetch(
+            "SELECT twitch_name FROM notification WHERE guild_id = $1",
+            interaction.guild.id
+        )
+    except Exception:
+        return []  # Return empty list if DB error
 
     options = [
         app_commands.Choice(name=row["twitch_name"], value=row["twitch_name"])
@@ -40,14 +46,20 @@ async def timezone_autocomplete(interaction: Interaction, current: str) -> list[
         for tz in filtered[:25]
     ]
     
-# async def video_types_autocomplete(interaction: Interaction, current: str) -> list[app_commands.Choice[str]]:
-#     types = {
-#         "archive" : "Get VOD's",
-#         "highlights" : "Get Highlights",
-#         "upload" : "Get videos uploaded by cocoakissies"
-#     }
+async def video_types_autocomplete(interaction: Interaction, current: str) -> list[app_commands.Choice[str]]:
+    types = {
+        "all": "All videos",
+        "archive": "Get VOD's", 
+        "highlight": "Get Highlights",
+        "upload": "Get videos uploaded by cocoakissies"
+    }
     
-#     return [
-#         app_commands.Choice(name=desc, value=type)
-#         for type, desc in types
-#     ]
+    if not current:
+        filtered = types
+    else:
+        filtered = {k: v for k, v in types.items() if current.lower() in k.lower() or current.lower() in v.lower()}
+    
+    return [
+        app_commands.Choice(name=desc, value=type_key)
+        for type_key, desc in filtered.items()
+    ]

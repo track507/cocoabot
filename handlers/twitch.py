@@ -1,7 +1,7 @@
 import discord.ext
 from discord.ext import commands
 from discord import app_commands
-from helpers.autocomplete import streamer_autocomplete#, video_types_autocomplete
+from helpers.autocomplete import streamer_autocomplete, video_types_autocomplete
 from dateutil import parser
 from zoneinfo import ZoneInfo
 from twitchAPI.helper import first
@@ -417,25 +417,94 @@ class TwitchCog(commands.Cog):
             logger.exception("Error in alert")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
                 
-    # @app_commands.command(name="videos", description="Get cocoakissies latest video's!")
-    # @is_whitelisted()
-    # @app_commands.describe(type="Video type (optional): archive (VOD's), highlights, upload")
-    # @app_commands.autocomplete(type=video_types_autocomplete)
-    # async def videos(self, interaction: discord.Interaction, twitch_username: str, type=VideoType.All):
-    #     await interaction.response.defer()
-    #     try:
-    #         twitch = get_twitch()
-    #         cocoasguild = get_cocoasguild()
-    #         user = await first(twitch.get_users(logins=["cocoakissies"]))
+    @app_commands.command(name="videos", description="Get cocoakissies latest video's!")
+    @is_whitelisted()
+    @app_commands.describe(type="Video type (optional, default ALL): archive (VOD's), highlight, upload")
+    @app_commands.autocomplete(type=video_types_autocomplete)
+    async def videos(self, interaction: discord.Interaction, twitch_username: str, type: str = "all"):
+        await interaction.response.defer()
+        
+        try:
+            twitch = get_twitch()
+            user = await first(twitch.get_users(logins=["cocoakissies"]))
             
-    #         if not user.id or not user.login:
-    #             await interaction.followup.send("Twitch user not found.", ephemeral=True)
-    #             return
-    #         # By default, it already sorts by time
-    #         videos = await twitch.get_videos(user_id=user.id, first=25, video_type=type)
-    #     except Exception as e:
-    #         logger.exception("Error in videos")
-    #         await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
+            if not user.id or not user.login:
+                await interaction.followup.send("Twitch user not found.", ephemeral=True)
+                return
+            
+            # Convert string to VideoType enum
+            video_type_map = {
+                "all": VideoType.ALL,
+                "archive": VideoType.ARCHIVE,
+                "highlight": VideoType.HIGHLIGHT,
+                "upload": VideoType.UPLOAD
+            }
+            
+            video_type = video_type_map.get(type.lower(), VideoType.ALL)
+            
+            # Get videos
+            videos = await twitch.get_videos(user_id=user.id, first=25, video_type=video_type)
+            
+            if not videos:
+                await interaction.followup.send(f"No videos found for {user.display_name} of type {type}.", ephemeral=False)
+                return
+            
+            # Store emojis for use
+            cocoasguild = get_cocoasguild()
+            streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else '🎬'
+            bobaEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaBoba") if cocoasguild else '🧋'
+            personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else '🩷'
+            sparkles = discord.utils.get(cocoasguild.emojis, name="sparkles~1") if cocoasguild else '✨'
+            caught = discord.utils.get(cocoasguild.emojis, name="cocoaCaughtIn4K") if cocoasguild else '👀'
+            controllerEmoji = discord.utils.get(cocoasguild.emojis, name="cocoascontroller") if cocoasguild else '🎮'
+
+            # Create embeds for each video
+            pages = []
+            for video in videos:
+                embed = discord.Embed(
+                    title=f"🩷 {user.display_name}'s Videos",
+                    description=f"Showing {type}",
+                    url=video.url,
+                    color=discord.Color(value=0xf8e7ef)
+                )
+                
+                # Video title and description
+                embed.add_field(name=f"{streamEmoji} Title", value=video.title or "No title", inline=False)
+                
+                if video.description:
+                    # Truncate description if too long for embed
+                    desc = video.description[:1000] + "..." if len(video.description) > 1000 else video.description
+                    embed.add_field(name=f"{controllerEmoji} Description", value=desc, inline=False)
+                
+                # Video stats
+                embed.add_field(name=f"{bobaEmoji} Views", value=f"{video.view_count:,}" if video.view_count else "0", inline=True)
+                
+                if video.published_at:
+                    embed.add_field(name=f"{caught} Date", value=f"<t:{int(video.published_at.timestamp())}:D>", inline=True)
+                
+                # Video type
+                embed.add_field(name=f"{sparkles} Type", value=video.type.value if video.type else "Unknown", inline=True)
+                
+                # URL
+                embed.add_field(name=f"{personEmoji} Watch", value=f"{video.url}", inline=False)
+                
+                # Set thumbnail if available
+                if video.thumbnail_url:
+                    embed.set_thumbnail(url=video.thumbnail_url)
+                
+                # Footer with video ID
+                embed.set_footer(text=f"Video ID: {video.id}")
+                
+                pages.append(embed)
+            
+            from handlers.buttons import PaginatorEmbedView
+            view = PaginatorEmbedView(interaction, pages)
+            await interaction.followup.send(embed=pages[0], view=view, ephemeral=False)
+                
+        except Exception as e:
+            logger.exception("Error in videos")
+            await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
+            
     # # use twitchAPI oAuth to generate an oAuth link and use a refresh_token to auto refresh
     # @app_commands.command(name="authorizetwitch", description="Authorize Twitch with oAuth")
     # @is_whitelisted()
