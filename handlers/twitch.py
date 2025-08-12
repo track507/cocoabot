@@ -443,7 +443,7 @@ class TwitchCog(commands.Cog):
             video_type = video_type_map.get(type.lower(), VideoType.ALL)
             
             # Get videos
-            videos = await twitch.get_videos(user_id=user.id, first=25, video_type=video_type)
+            videos = [video async for video in twitch.get_videos(user_id=user.id, first=25, video_type=video_type)]
             
             if not videos:
                 await interaction.followup.send(f"No videos found for {user.display_name} of type {type}.", ephemeral=False)
