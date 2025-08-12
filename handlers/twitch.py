@@ -421,7 +421,7 @@ class TwitchCog(commands.Cog):
     @is_whitelisted()
     @app_commands.describe(type="Video type (optional, default ALL): archive (VOD's), highlight, upload")
     @app_commands.autocomplete(type=video_types_autocomplete)
-    async def videos(self, interaction: discord.Interaction, twitch_username: str, type: str = "all"):
+    async def videos(self, interaction: discord.Interaction, type: str = "all"):
         await interaction.response.defer()
         
         try:
