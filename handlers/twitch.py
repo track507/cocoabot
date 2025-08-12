@@ -417,7 +417,7 @@ class TwitchCog(commands.Cog):
             logger.exception("Error in alert")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
                 
-    @app_commands.command(name="videos", description="Get cocoakissies latest video's!")
+    @app_commands.command(name="videos", description="Get cocoakissiess latest video's!")
     @is_whitelisted()
     @app_commands.describe(type="Video type (optional, default ALL): archive (VOD's), highlight, upload")
     @app_commands.autocomplete(type=video_types_autocomplete)
@@ -426,7 +426,7 @@ class TwitchCog(commands.Cog):
         
         try:
             twitch = get_twitch()
-            user = await first(twitch.get_users(logins=["cocoakissies"]))
+            user = await first(twitch.get_users(logins=["cocoakissiess"]))
             
             if not user.id or not user.login:
                 await interaction.followup.send("Twitch user not found.", ephemeral=True)
