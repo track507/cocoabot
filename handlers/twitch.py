@@ -488,9 +488,7 @@ class TwitchCog(commands.Cog):
                 # URL
                 embed.add_field(name=f"{personEmoji} Watch", value=f"{video.url}", inline=False)
                 
-                # Set thumbnail if available
-                if video.thumbnail_url:
-                    embed.set_thumbnail(url=video.thumbnail_url)
+                embed.set_thumbnail(url=video.thumbnail_url if video.thumbnail_url else "https://i.imgur.com/zahjs17.png")
                 
                 # Footer with video ID
                 embed.set_footer(text=f"Video ID: {video.id}")
