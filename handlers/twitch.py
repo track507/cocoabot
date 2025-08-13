@@ -61,6 +61,7 @@ class TwitchCog(commands.Cog):
             streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else ''
             boba = discord.utils.get(cocoasguild.emojis, name="cocoaBoba") if cocoasguild else ''
             personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else ''
+            controllerEmoji = discord.utils.get(self.bot.emojis, name="cocoascontroller") or '🎮'
             # https://dev.twitch.tv/docs/api/reference/#get-channel-stream-schedule
             groups = {}
             for s in segments:
@@ -87,7 +88,7 @@ class TwitchCog(commands.Cog):
                 es2 = "\u2003\u2003"
                 stream_info = (
                     f"{streamEmoji} **{stream_title}**\n"
-                    f"{es2}<:cocoascontroller:1378540036437573734> Playing: {cat_name}\n"
+                    f"{es2}{controllerEmoji} Playing: {cat_name}\n"
                     f"{es2}{boba} From: {start_str} → {end_str} {recurrence_text}\n"
                 )
                 
@@ -140,8 +141,10 @@ class TwitchCog(commands.Cog):
                 stream = s
                 break
 
-            streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else ''
-            personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else ''
+            cocoasguild = get_cocoasguild()
+            streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else '🎬'
+            personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else '🩷'
+            controllerEmoji = discord.utils.get(self.bot.emojis, name="cocoascontroller") or '🎮'
 
             if stream:
                 embed = discord.Embed(
@@ -155,7 +158,7 @@ class TwitchCog(commands.Cog):
                     inline=False
                 )
                 embed.add_field(
-                    name=f"<:cocoascontroller:1378540036437573734> Game:",
+                    name=f"{controllerEmoji} Game:",
                     value=stream.game_name or "Unknown",
                     inline=False
                 )
@@ -363,8 +366,10 @@ class TwitchCog(commands.Cog):
                 )
                 
                 # Prepare embed
-                personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else None
-                streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else None
+                cocoasguild = get_cocoasguild()
+                streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else '🎬'
+                personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else '🩷'
+                controllerEmoji = discord.utils.get(self.bot.emojis, name="cocoascontroller") or '🎮'
 
                 embed = discord.Embed(
                     title=f"🩷 {user.display_name} is LIVE",
@@ -377,7 +382,7 @@ class TwitchCog(commands.Cog):
                     inline=False
                 )
                 embed.add_field(
-                    name=f"<:cocoascontroller:1378540036437573734> Game:",
+                    name=f"{controllerEmoji} Game:",
                     value=stream.game_name or "Unknown",
                     inline=False
                 )
@@ -457,10 +462,10 @@ class TwitchCog(commands.Cog):
             streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else '🎬'
             bobaEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaBoba") if cocoasguild else '🧋'
             personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else '🩷'
-            sparkles = discord.utils.get(cocoasguild.emojis, name="sparkles~1") if cocoasguild else '✨'
+            sparkles = discord.utils.get(cocoasguild.emojis, name="sparkles") if cocoasguild else '✨'
             caught = discord.utils.get(cocoasguild.emojis, name="cocoaCaughtIn4K") if cocoasguild else '👀'
-            controllerEmoji = discord.utils.get(cocoasguild.emojis, name="cocoascontroller") if cocoasguild else '🎮'
             cokeEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLargeCoke") if cocoasguild else '🥤'
+            controllerEmoji = discord.utils.get(self.bot.emojis, name="cocoascontroller") or '🎮'
             
             pages = []
             for clip in clips:
@@ -545,9 +550,9 @@ class TwitchCog(commands.Cog):
             streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else '🎬'
             bobaEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaBoba") if cocoasguild else '🧋'
             personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else '🩷'
-            sparkles = discord.utils.get(cocoasguild.emojis, name="sparkles~1") if cocoasguild else '✨'
+            sparkles = discord.utils.get(cocoasguild.emojis, name="sparkles") if cocoasguild else '✨'
             caught = discord.utils.get(cocoasguild.emojis, name="cocoaCaughtIn4K") if cocoasguild else '👀'
-            controllerEmoji = discord.utils.get(cocoasguild.emojis, name="cocoascontroller") if cocoasguild else '🎮'
+            controllerEmoji = discord.utils.get(self.bot.emojis, name="cocoascontroller") or '🎮'
 
             # Create embeds for each video
             pages = []

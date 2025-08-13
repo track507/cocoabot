@@ -238,7 +238,7 @@ class PaginatorTextView(View):
                 
 class PaginatorEmbedView(View):
     def __init__(self, interaction: Interaction, pages: list[Embed]):
-        super().__init__(timeout=60)
+        super().__init__(timeout=120)
         self.pages = pages
         self.current = 0
 
