@@ -1,12 +1,15 @@
 import discord.ext
 from discord.ext import commands
 from discord import app_commands
-from helpers.autocomplete import streamer_autocomplete, video_types_autocomplete
+from helpers.autocomplete import (
+    streamer_autocomplete, 
+    video_types_autocomplete, 
+    features_autocomplete
+)
 from dateutil import parser
 from zoneinfo import ZoneInfo
 from twitchAPI.helper import first
 from twitchAPI.type import TwitchResourceNotFound, VideoType
-from twitchAPI.oauth import UserAuthenticator
 from helpers.constants import (
     is_whitelisted,
     get_cocoasguild,
@@ -23,14 +26,12 @@ class TwitchCog(commands.Cog):
     
     @app_commands.command(name="schedule", description="Get Cocoa's schedule.")
     @is_whitelisted()
-    @app_commands.describe(twitch_username="Select a Twitch user from this server")
-    @app_commands.autocomplete(twitch_username=streamer_autocomplete)
-    async def schedule(self, interaction: discord.Interaction, twitch_username: str):
+    async def schedule(self, interaction: discord.Interaction):
         await interaction.response.defer() 
         try:
             # get user if any
             twitch = get_twitch()
-            user = await first(twitch.get_users(logins=[twitch_username]))
+            user = await first(twitch.get_users(logins=["cocoakissiess"]))
             if not user.id or not user.login:
                 await interaction.followup.send("Twitch user not found.", ephemeral=True)
                 return
@@ -41,7 +42,7 @@ class TwitchCog(commands.Cog):
                 await interaction.followup.send(f"{user.display_name} does not have a schedule.", ephemeral=False)
                 return
             except Exception as e:
-                logger.exception(f"Error in get_channel_stream_schedule: {e}")
+                logger.exception(f"Error in /get_channel_stream_schedule: {e}")
                 await interaction.followup.send(f"❌ Error fetching schedule: {e}", ephemeral=True)
                 return
                 
@@ -122,15 +123,14 @@ class TwitchCog(commands.Cog):
             logger.exception(f"Error fetching schedule: {e}")
             await interaction.followup.send(f"❌ Error fetching schedule: {e}", ephemeral=True)
             
-    @app_commands.describe(twitch_username="Select a Twitch user from this server")
-    @app_commands.autocomplete(twitch_username=streamer_autocomplete)
     @app_commands.command(name="status", description="Check Cocoa's Twitch status")
-    async def status(self, interaction: discord.Interaction, twitch_username: str):
+    @is_whitelisted()
+    async def status(self, interaction: discord.Interaction):
         await interaction.response.defer()
         try:
             twitch = get_twitch()
             cocoasguild = get_cocoasguild()
-            user = await first(twitch.get_users(logins=[twitch_username]))
+            user = await first(twitch.get_users(logins=["cocoakissiess"]))
             if not user:
                 await interaction.followup.send("❌ Twitch user not found.", ephemeral=True)
                 return
@@ -183,14 +183,12 @@ class TwitchCog(commands.Cog):
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.command(name="removenotification", description="Remove Twitch live notification.")
     @is_whitelisted()
-    @app_commands.describe(twitch_username="Select a Twitch user from this server")
-    @app_commands.autocomplete(twitch_username=streamer_autocomplete)
-    async def removenotification(self, interaction: discord.Interaction, twitch_username: str):
+    async def removenotification(self, interaction: discord.Interaction):
         await interaction.response.defer()
         try:
             from psql import execute
             twitch = get_twitch()
-            user = await first(twitch.get_users(logins=[twitch_username]))
+            user = await first(twitch.get_users(logins=["cocoakissiess"]))
             if not user or not user.id:
                 await interaction.followup.send("❌ Twitch user not found.", ephemeral=True)
                 return
@@ -216,7 +214,7 @@ class TwitchCog(commands.Cog):
             await interaction.followup.send(f"✅ Removed notifications for {user.display_name}.", ephemeral=False)
 
         except Exception as e:
-            logger.exception("Error in removenotification")
+            logger.exception("Error in /removenotification")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
             
     @discord.ext.commands.has_guild_permissions(manage_guild=True)
@@ -295,7 +293,7 @@ class TwitchCog(commands.Cog):
             await interaction.followup.send(f"Notifications for {twitch_name} setup successfully.", ephemeral=False)
             
         except Exception as e:
-            logger.exception("Error in setlivenotifications")
+            logger.exception("Error in /setlivenotifications")
             await interaction.followup.send(f"Error: {e}", ephemeral=True)
             
     @app_commands.command(name="liststreamers", description="List all streamers with notifications setup in this server.")
@@ -319,15 +317,13 @@ class TwitchCog(commands.Cog):
             await interaction.followup.send(msg, ephemeral=False)
         
         except Exception as e:
-            logger.exception("Error in liststreamers")
+            logger.exception("Error in /liststreamers")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
     
     @discord.ext.commands.has_guild_permissions(moderate_members=True)
     @app_commands.checks.has_permissions(moderate_members=True)
     @app_commands.command(name="alert", description="Manually alert users when a streamer goes live")
     @is_whitelisted()
-    @app_commands.describe(twitch_username="Twitch username")
-    @app_commands.autocomplete(twitch_username=streamer_autocomplete)
     async def alert(self, interaction: discord.Interaction, twitch_username: str):
         await interaction.response.defer()
         try:
@@ -335,7 +331,7 @@ class TwitchCog(commands.Cog):
             from psql import fetchrow, execute
             twitch = get_twitch()
             cocoasguild = get_cocoasguild()
-            user = await first(twitch.get_users(logins=[twitch_username]))
+            user = await first(twitch.get_users(logins=["cocoakissiess"]))
             if not user:
                 await interaction.followup.send("❌ Twitch user not found.", ephemeral=True)
                 return
@@ -414,7 +410,98 @@ class TwitchCog(commands.Cog):
                 
             await interaction.followup.send(f"{user.display_name} is not currently live.")
         except Exception as e:
-            logger.exception("Error in alert")
+            logger.exception("Error in /alert")
+            await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
+            
+    @app_commands.command(name="clips", description="Get cocoakissiess latest clips!")
+    @is_whitelisted()
+    @app_commands.describe(features="Featured clips (optional, default NONE): True, False, or None")
+    @app_commands.autocomplete(features=features_autocomplete)
+    async def clips(self, interaction: discord.Interaction, features: str = "none"):
+        await interaction.response.defer()
+        
+        try:
+            twitch = get_twitch()
+            user = await first(twitch.get_users(logins=["cocoakissiess"]))
+            if not user.id or not user.login:
+                await interaction.followup.send("Twitch user not found.", ephemeral=True)
+                return
+            
+            features_type_map = {
+                "none" : None,
+                "true": True,
+                "false": False
+            }
+            
+            if features.lower() not in features_type_map:
+                await interaction.followup.send(f"❌ Invalid features type: `{features}`. Please use the autocomplete suggestions.", ephemeral=True)
+                return
+            
+            feature_type = features_type_map.get(features.lower(), None)
+            
+            clips = [clip async for clip in twitch.get_clips(broadcaster_id=user.id, first=25, featured=feature_type)]
+            
+            # Set display type
+            if features.lower() == "none":
+                type_display = "All"
+            elif features.lower() == "true":
+                type_display = "Featured"
+            else:
+                type_display = "Non-Featured"
+            
+            if not clips:
+                await interaction.followup.send(f"No clips found for {user.display_name} with features type {type_display}.", ephemeral=False)
+                return
+            
+            cocoasguild = get_cocoasguild()
+            streamEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLicense") if cocoasguild else '🎬'
+            bobaEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaBoba") if cocoasguild else '🧋'
+            personEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLove") if cocoasguild else '🩷'
+            sparkles = discord.utils.get(cocoasguild.emojis, name="sparkles~1") if cocoasguild else '✨'
+            caught = discord.utils.get(cocoasguild.emojis, name="cocoaCaughtIn4K") if cocoasguild else '👀'
+            controllerEmoji = discord.utils.get(cocoasguild.emojis, name="cocoascontroller") if cocoasguild else '🎮'
+            cokeEmoji = discord.utils.get(cocoasguild.emojis, name="cocoaLargeCoke") if cocoasguild else '🥤'
+            
+            pages = []
+            for clip in clips:
+                embed = discord.Embed(
+                    title=f"🩷 {clip.broadcaster_name}'s Clips",
+                    description=f"Showing {type_display} clips",
+                    url=clip.url,
+                    color=discord.Color(value=0xf8e7ef)
+                )
+                
+                embed.add_field(name=f"{streamEmoji} Title", value=clip.title or "No title", inline=False)
+                
+                try:
+                    game = await first(twitch.get_games(game_ids=[clip.game_id])) if clip.game_id else None
+                except:
+                    game = None
+                
+                embed.add_field(name=f"{controllerEmoji} Game", value=game.name if game else "Unknown", inline=False)
+                
+                embed.add_field(name=f"{bobaEmoji} Views", value=f"{clip.view_count:,}" if clip.view_count else "0", inline=True)
+                
+                embed.add_field(name=f"{caught} Date", value=f"<t:{int(clip.created_at.timestamp())}:D>", inline=True)
+                
+                embed.add_field(name=f"{cokeEmoji} Clipped by", value=f"{clip.creator_name}", inline=True)
+                
+                # FIX: Use string instead of variable in braces
+                embed.add_field(name=f"{sparkles} Type", value="Featured" if clip.is_featured else "Regular", inline=True)
+                
+                embed.add_field(name=f"{personEmoji} Watch", value=f"{clip.url}", inline=False)
+                
+                embed.set_thumbnail(url=clip.thumbnail_url if clip.thumbnail_url else "https://i.imgur.com/ktvDsVQ.png")
+                
+                embed.set_footer(text=f"Clip ID: {clip.id}")
+                
+                pages.append(embed)
+                
+            from handlers.buttons import PaginatorEmbedView
+            view = PaginatorEmbedView(interaction, pages)
+            await interaction.followup.send(embed=pages[0], view=view, ephemeral=False)
+        except Exception as e:
+            logger.exception("Error in /clips")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
                 
     @app_commands.command(name="videos", description="Get cocoakissiess latest video's!")
@@ -439,6 +526,10 @@ class TwitchCog(commands.Cog):
                 "highlight": VideoType.HIGHLIGHT,
                 "upload": VideoType.UPLOAD
             }
+            
+            if type.lower() not in video_type_map:
+                await interaction.followup.send(f"❌ Invalid video type: `{type}`. Please use the autocomplete suggestions.", ephemeral=True)
+                return
             
             video_type = video_type_map.get(type.lower(), VideoType.ALL)
             
@@ -488,7 +579,7 @@ class TwitchCog(commands.Cog):
                 # URL
                 embed.add_field(name=f"{personEmoji} Watch", value=f"{video.url}", inline=False)
                 
-                embed.set_thumbnail(url=video.thumbnail_url if video.thumbnail_url else "https://i.imgur.com/zahjs17.png")
+                embed.set_thumbnail(url=video.thumbnail_url if video.thumbnail_url else "https://i.imgur.com/ktvDsVQ.png")
                 
                 # Footer with video ID
                 embed.set_footer(text=f"Video ID: {video.id}")
@@ -500,7 +591,7 @@ class TwitchCog(commands.Cog):
             await interaction.followup.send(embed=pages[0], view=view, ephemeral=False)
                 
         except Exception as e:
-            logger.exception("Error in videos")
+            logger.exception("Error in /videos")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
             
     # # use twitchAPI oAuth to generate an oAuth link and use a refresh_token to auto refresh

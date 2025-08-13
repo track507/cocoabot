@@ -21,6 +21,7 @@ from psql import (
     fetchrow,
     execute
 )
+from zoneinfo import available_timezones
 from discord.ext import commands
 import discord.ext
 from helpers.birthday import check_birthdays, announce_birthday
@@ -110,6 +111,13 @@ class BirthdayCog(commands.Cog):
                 birthdate = parse(birthdate)
             except ValueError as e:
                 await interaction.followup.send(str(e), ephemeral=True)
+                return
+            
+            if time_zone not in available_timezones():
+                await interaction.response.send_message(
+                    f"❌ Invalid timezone: `{time_zone}`. Please use the autocomplete suggestions.",
+                    ephemeral=True
+                )
                 return
             
             config = await fetchrow("""

@@ -16,6 +16,7 @@ async def command_autocomplete(interaction: Interaction, current: str) -> list[a
 
     return choices[:25]
 
+# THIS IS ONLY USED FOR TESTING PURPOSES
 async def streamer_autocomplete(interaction: Interaction, current: str) -> list[app_commands.Choice[str]]:
     if not interaction.guild:
         return []
@@ -62,4 +63,21 @@ async def video_types_autocomplete(interaction: Interaction, current: str) -> li
     return [
         app_commands.Choice(name=desc, value=type_key)
         for type_key, desc in filtered.items()
+    ]
+    
+async def features_autocomplete(interaction: Interaction, current: str) -> list[app_commands.Choice[str]]:
+    features = {
+        "none": "No featured clips",
+        "true": "Featured clips",
+        "false": "Non-featured clips"
+    }
+    
+    if not current:
+        filtered = features
+    else:
+        filtered = {k: v for k, v in features.items() if current.lower() in k.lower() or current.lower() in v.lower()}
+    
+    return [
+        app_commands.Choice(name=desc, value=feature_key)
+        for feature_key, desc in filtered.items()
     ]
