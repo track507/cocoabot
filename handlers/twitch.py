@@ -439,7 +439,7 @@ class TwitchCog(commands.Cog):
             
             feature_type = features_type_map.get(features.lower(), None)
             
-            clips = [clip async for clip in twitch.get_clips(broadcaster_id=user.id, first=25, featured=feature_type)]
+            clips = [clip async for clip in twitch.get_clips(broadcaster_id=user.id, first=25, is_featured=feature_type)]
             
             # Set display type
             if features.lower() == "none":
