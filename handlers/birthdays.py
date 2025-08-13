@@ -114,10 +114,7 @@ class BirthdayCog(commands.Cog):
                 return
             
             if time_zone not in available_timezones():
-                await interaction.response.send_message(
-                    f"❌ Invalid timezone: `{time_zone}`. Please use the autocomplete suggestions.",
-                    ephemeral=True
-                )
+                await interaction.followup.send(f"❌ Invalid timezone: `{time_zone}`. Please use the autocomplete suggestions.", ephemeral=True)
                 return
             
             config = await fetchrow("""
