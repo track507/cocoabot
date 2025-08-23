@@ -46,7 +46,7 @@ async def setup(bot):
     eventsub = EventSubWebhook(
         callback_url=PUBLIC_URL,
         port=webhook_port,
-        twitch_api=twitch,
+        twitch=twitch,
         callback_loop=asyncio.get_running_loop()
     )
     
