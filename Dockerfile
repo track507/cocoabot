@@ -23,5 +23,8 @@ COPY --from=builder /opt/venv /opt/venv
 # Copy app code
 COPY . .
 
+# Expose the port (Railway will set the PORT env var)
+EXPOSE $PORT
+
 # Run the bot
 CMD ["python", "main.py"]

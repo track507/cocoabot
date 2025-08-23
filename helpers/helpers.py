@@ -26,7 +26,7 @@ from helpers.constants import (
     PRIVATE_GUILD_ID,
     PUBLIC_URL
 )
-# from web.webserver import app as fastapi_app
+import os
 
 async def setup(bot):
     
@@ -40,19 +40,66 @@ async def setup(bot):
     logger.debug(f"twitch: {twitch} (type: {type(twitch)})")
     logger.info("Twitch object details:\n" + pprint.pformat(vars(twitch), indent=4))
     
-    eventsub = EventSubWebhook(PUBLIC_URL, 8080, twitch, callback_loop=asyncio.get_running_loop())
-    eventsub._secret = TWITCH_WEBHOOK_SECRET
-    Thread(target=start_eventsub_thread, args=(eventsub,), daemon=True).start()
-    logger.info("Started Twitch EventSub webhook on port 8080 in background thread")
+    webhook_port = int(os.getenv('PORT', 8080))
+    logger.info(f"Setting up EventSub webhook on port {webhook_port}")
     
-    print(f"Eventsub secret: {eventsub._secret}")
-    # Thread(target=run_web_server, daemon=True).start()
-    # logger.info("Started FastAPI Web Server on port 8081 in background thread")
+    eventsub = EventSubWebhook(
+        callback_url=PUBLIC_URL,
+        port=webhook_port,
+        twitch_api=twitch,
+        callback_loop=asyncio.get_running_loop()
+    )
     
-    await eventsub.unsubscribe_all() # remove all existing subscriptions to start fresh
-    # iterate over eventSubScriptionResult.data which is a list of EventSubSubscription objects
-    # and each EventSubSubscription object has an id and a condition attribute which is a dictionary [str, str]
-
+    if TWITCH_WEBHOOK_SECRET:
+        eventsub._secret = TWITCH_WEBHOOK_SECRET.encode('utf-8') if isinstance(TWITCH_WEBHOOK_SECRET, str) else TWITCH_WEBHOOK_SECRET
+        logger.info("Webhook secret configured")
+    else:
+        logger.error("TWITCH_WEBHOOK_SECRET not found in environment variables!")
+        raise ValueError("TWITCH_WEBHOOK_SECRET is required")
+    
+    # Start EventSub in background thread with better error handling
+    def start_eventsub_with_retry():
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            try:
+                logger.info(f"Starting EventSub webhook (attempt {retry_count + 1}/{max_retries})")
+                eventsub.start()
+                break
+            except OSError as e:
+                if e.errno == 98:  # Address already in use
+                    retry_count += 1
+                    if retry_count < max_retries:
+                        logger.warning(f"Port {webhook_port} in use, retrying in 5 seconds...")
+                        import time
+                        time.sleep(5)
+                    else:
+                        logger.error(f"Failed to bind to port {webhook_port} after {max_retries} attempts")
+                        raise
+                else:
+                    raise
+            except Exception as e:
+                logger.exception("Failed to start EventSub webhook")
+                raise
+    
+    Thread(target=start_eventsub_with_retry, daemon=True).start()
+    
+    # Wait a bit for the webhook to start
+    await asyncio.sleep(2)
+    
+    logger.info(f"Started Twitch EventSub webhook on port {webhook_port} in background thread")
+    logger.info(f"Webhook URL: {PUBLIC_URL}")
+    logger.info(f"Eventsub secret configured: {eventsub._secret is not None}")
+    
+    # Clean up existing subscriptions
+    try:
+        await eventsub.unsubscribe_all()
+        logger.info("Cleaned up existing EventSub subscriptions")
+    except Exception as e:
+        logger.warning(f"Could not clean up existing subscriptions: {e}")
+    
+    # Initialize bot state
     constants.bot_state.bot = bot
     constants.bot_state.twitch = twitch
     constants.bot_state.eventsub = eventsub
@@ -61,17 +108,38 @@ async def setup(bot):
     constants.bot_state.tree = bot.tree
     er.setup_errors(bot.tree)
     
+    # Set up subscriptions with retry logic
     rows = await fetch("SELECT broadcaster_id FROM notification")
+    successful_subs = 0
+    failed_subs = 0
+    
     for row in rows:
-        await eventsub.listen_stream_online(
-            broadcaster_user_id=row["broadcaster_id"],
-            callback=handle_stream_online
-        )
-        await eventsub.listen_stream_offline(
-            broadcaster_user_id=row["broadcaster_id"],
-            callback=handle_stream_offline
-        )
-        
+        try:
+            logger.info(f"Setting up subscriptions for broadcaster {row['broadcaster_id']}")
+            
+            # Add delays between subscription attempts
+            await asyncio.sleep(1)
+            
+            await eventsub.listen_stream_online(
+                broadcaster_user_id=row["broadcaster_id"],
+                callback=handle_stream_online
+            )
+            
+            await asyncio.sleep(0.5)
+            
+            await eventsub.listen_stream_offline(
+                broadcaster_user_id=row["broadcaster_id"],
+                callback=handle_stream_offline
+            )
+            
+            successful_subs += 1
+            logger.info(f"Successfully set up subscriptions for broadcaster {row['broadcaster_id']}")
+            
+        except Exception as e:
+            failed_subs += 1
+            logger.error(f"Failed to set up subscriptions for broadcaster {row['broadcaster_id']}: {e}")
+            # Continue with other subscriptions instead of failing completely
+    
     logger.info("Validating bot state...")
     required_components = [
         ("bot", constants.get_bot()),
@@ -86,7 +154,7 @@ async def setup(bot):
         raise RuntimeError(f"Setup incomplete - missing components: {missing}")
     
     logger.info("All bot components properly initialized")
-    logger.info(f"Finished registering {len(rows)} subscriptions.")
+    logger.info(f"EventSub subscriptions: {successful_subs} successful, {failed_subs} failed")
     logger.info(f"Setup complete.")
     
 async def initialize_twitch(twitch: Twitch):
@@ -97,30 +165,35 @@ async def initialize_twitch(twitch: Twitch):
         constants.bot_state.user_auth_scope = USER_AUTH_SCOPES
         assert isinstance(twitch, Twitch), "twitch is not an instance of Twitch"
         await twitch.authenticate_app([])
-        current_subs = await twitch.get_eventsub_subscriptions()
-        subs = current_subs.data
-        if len(subs) == 0 or current_subs.total == 0: return
-        for sub in subs:
-            user_id = sub.condition.get('broadcaster_user_id') or sub.condition.get('user_id')
-            if not user_id:
-                logger.warning(f"Subscription {sub.id} has no broadcaster/user ID in condition")
-                continue
+        
+        # Log current subscriptions for debugging
+        try:
+            current_subs = await twitch.get_eventsub_subscriptions()
+            subs = current_subs.data
+            logger.info(f"Current EventSub subscriptions: {len(subs)}")
+            
+            if len(subs) == 0 or current_subs.total == 0: 
+                logger.info("No existing subscriptions found")
+                return
+                
+            for sub in subs:
+                user_id = sub.condition.get('broadcaster_user_id') or sub.condition.get('user_id')
+                if not user_id:
+                    logger.warning(f"Subscription {sub.id} has no broadcaster/user ID in condition")
+                    continue
 
-            user_info = await first(twitch.get_users(user_ids=[user_id]))
-            if user_info:
-                display_name = user_info.display_name
-                logger.info(f"Broadcaster: {user_id}, {display_name}")
-            else:
-                logger.info(f"Broadcaster: {user_id}, user not found")
+                user_info = await first(twitch.get_users(user_ids=[user_id]))
+                if user_info:
+                    display_name = user_info.display_name
+                    logger.info(f"Existing subscription - Broadcaster: {user_id} ({display_name}), Type: {sub.type}, Status: {sub.status}")
+                else:
+                    logger.info(f"Existing subscription - Broadcaster: {user_id} (user not found), Type: {sub.type}, Status: {sub.status}")
+        except Exception as e:
+            logger.warning(f"Could not fetch existing subscriptions: {e}")
+            
     except Exception as e:
-            logger.exception("Error in initialize_twitch process")
+        logger.exception("Error in initialize_twitch process")
 
-def start_eventsub_thread(eventsub):
-    eventsub.start()
-
-# def run_web_server():
-#     uvicorn.run(fastapi_app, host="0.0.0.0", port=8081)
-    
 async def handle_stream_online(event: StreamOnlineEvent):
     data = event.event
     broadcaster_id = data.broadcaster_user_id
@@ -131,6 +204,7 @@ async def handle_stream_online(event: StreamOnlineEvent):
             if not all([constants.get_twitch(), constants.get_bot(), constants.get_cocoasguild()]):
                 logger.error(f"Bot state not initialized when handling stream online for {broadcaster_id}")
                 return
+                
             is_already_live = await fetchval(
                 "SELECT is_live FROM notification WHERE broadcaster_id = $1",
                 broadcaster_id
@@ -139,32 +213,13 @@ async def handle_stream_online(event: StreamOnlineEvent):
             if is_already_live:
                 logger.info(f"Skipping already live broadcaster: {broadcaster_id}")
                 return
+                
             # Fetch stream info
             stream = None
             twitch = constants.get_twitch()
             async for s in twitch.get_streams(user_id=[broadcaster_id]):
                 stream = s
                 break
-
-            """
-            stream object
-            2025-05-23T23:14:36.830 app[32876e00ad0978] dfw [info] 2025-05-23 23:14:36,830 [INFO] Stream object:
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 2025-05-23 23:14:36,831 [INFO] { 'game_id': '',
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'game_name': '',
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'id': '321493640444',
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'is_mature': False,
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'language': 'en',
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'started_at': datetime.datetime(2025, 5, 23, 23, 14, 15, tzinfo=tzutc()),
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'tag_ids': [],
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'tags': ['chill', 'Cozy', 'He', 'English'],
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'thumbnail_url': 'https://static-cdn.jtvnw.net/previews-ttv/live_user_lxchet-{width}x{height}.jpg',
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'title': 'Testttt',
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'type': 'live',
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'user_id': '113142538',
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'user_login': 'lxchet',
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'user_name': 'Lxchet',
-            2025-05-23T23:14:36.831 app[32876e00ad0978] dfw [info] 'viewer_count': 0}
-            """
 
             if not stream:
                 logger.warning(f"No stream found for broadcaster {broadcaster_id}")
