@@ -327,7 +327,7 @@ class TwitchCog(commands.Cog):
     @app_commands.checks.has_permissions(moderate_members=True)
     @app_commands.command(name="alert", description="Manually alert users when a streamer goes live")
     @is_whitelisted()
-    async def alert(self, interaction: discord.Interaction, twitch_username: str):
+    async def alert(self, interaction: discord.Interaction):
         await interaction.response.defer()
         try:
             from helpers.constants import get_twitch, get_cocoasguild
