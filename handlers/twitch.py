@@ -80,16 +80,19 @@ class TwitchCog(commands.Cog):
                 
                 # This will be either America/Chicago etc. or UTC
                 start_local = start_dt.astimezone(ZoneInfo(user_tz))
-                end_local = end_dt.astimezone(ZoneInfo(user_tz))
+                if end_dt is not None:
+                    end_local = end_dt.astimezone(ZoneInfo(user_tz))
+                    end_str = end_local.strftime("%I:%M %p")
+                    time_range = f"{start_local.strftime('%I:%M %p')} → {end_str}"
+                else:
+                    time_range = f"{start_local.strftime('%I:%M %p')} → TBD"
                 
-                start_str = start_local.strftime("%I:%M %p")
-                end_str = end_local.strftime("%I:%M %p")
                 date_key = start_local.strftime("%A, %B %d")
                 es2 = "\u2003\u2003"
                 stream_info = (
                     f"{streamEmoji} **{stream_title}**\n"
                     f"{es2}{controllerEmoji} Playing: {cat_name}\n"
-                    f"{es2}{boba} From: {start_str} → {end_str} {recurrence_text}\n"
+                    f"{es2}{boba} From: {time_range} {recurrence_text}\n"
                 )
                 
                 if date_key not in groups:
