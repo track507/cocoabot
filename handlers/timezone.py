@@ -21,6 +21,22 @@ class TimezoneCog(commands.Cog):
     async def set_timezone(self, interaction: Interaction, time_zone: str):
         await interaction.response.defer(ephemeral=True)
         try:
+            existing = await fetchrow(
+                "SELECT * FROM user_timezone WHERE user_id = $1",
+                interaction.user.id
+            )
+            
+            if not existing:
+                await execute("""
+                    INSERT INTO user_timezone (user_id, timezone)
+                    VALUES ($1, $2)
+                """,
+                    interaction.user.id,
+                    time_zone
+                )
+                await interaction.followup.send(f"Your timezone has been set to {time_zone}")
+                return
+            
             await execute("""
                 UPDATE user_timezone
                 SET timezone = $1
@@ -29,6 +45,7 @@ class TimezoneCog(commands.Cog):
                 time_zone,
                 interaction.user.id
             )
+            
             await interaction.followup.send(f"Your timezone has been updated to {time_zone}")
         except Exception as e:
             logger.exception("Error in /set_timezone command")
