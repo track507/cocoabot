@@ -90,6 +90,8 @@ async def announce_birthday(bot, hits):
             color=discord.Color.gold()
         )
         
+        valid_users = []  # Track valid users
+        
         for user in users:
             user_id = user['user_id']
             member = guild.get_member(user_id)
@@ -98,7 +100,7 @@ async def announce_birthday(bot, hits):
                     # doesn't require server member intents but can be rate limited and slower
                     member = await guild.fetch_member(user_id)
                 except (Forbidden, HTTPException, NotFound):
-                    logger.warning(f"Could not find member {user_id} in guild {guild_id}")
+                    logger.warning(f"Could not find member {user_id} in guild {guild_id}, skipping birthday announcement")
                     continue  # skip this user if they can't be fetched
             
             line = f"{member.mention}"
@@ -108,6 +110,12 @@ async def announce_birthday(bot, hits):
                 value=line,
                 inline=False
             )
+            valid_users.append(member)
+        
+        # Only send if we have at least one valid user
+        if not valid_users:
+            logger.info(f"No valid users found for birthday announcement in guild {guild_id}, skipping message")
+            continue
             
         embed.set_footer(text="Happy Birthday!!!")
         embed.timestamp = datetime.now()

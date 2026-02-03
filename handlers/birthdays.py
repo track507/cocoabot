@@ -329,6 +329,29 @@ class BirthdayCog(commands.Cog):
         except Exception as e:
             logger.exception("Error in /listbirthdays command")
             await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
+    
+    # Event listener to remove birthday entries when a member leaves the server
+    @commands.Cog.listener()
+    async def on_member_remove(self, member: discord.Member):
+        """Automatically remove birthday entries when a member leaves the server"""
+        try:
+            existing = await fetchrow("""
+                SELECT * FROM birthday_user WHERE guild_id = $1 AND user_id = $2
+            """,
+                member.guild.id,
+                member.id
+            )
+            
+            if existing:
+                await execute("""
+                    DELETE FROM birthday_user WHERE guild_id = $1 AND user_id = $2
+                """,
+                    member.guild.id,
+                    member.id
+                )
+                logger.info(f"Removed birthday entry for {member.name} ({member.id}) who left {member.guild.name}")
+        except Exception as e:
+            logger.exception(f"Error removing birthday for member {member.id} in on_member_remove")
         
 async def setup(bot):
     await bot.add_cog(BirthdayCog(bot))
