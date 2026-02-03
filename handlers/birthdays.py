@@ -352,6 +352,65 @@ class BirthdayCog(commands.Cog):
                 logger.info(f"Removed birthday entry for {member.name} ({member.id}) who left {member.guild.name}")
         except Exception as e:
             logger.exception(f"Error removing birthday for member {member.id} in on_member_remove")
+            
+    @discord.ext.commands.has_guild_permissions(manage_guild=True)
+    @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.command(name="cleanbirthdays", description="Remove birthday entries for users who left the server")
+    @is_whitelisted()
+    async def cleanbirthdays(self, interaction: Interaction):
+        await interaction.response.defer(ephemeral=True)
+        try:
+            # Get all birthday entries for this guild
+            entries = await fetch("""
+                SELECT user_id FROM birthday_user WHERE guild_id = $1
+            """,
+                interaction.guild.id
+            )
+            
+            if not entries:
+                await interaction.followup.send("No birthday entries found for this server.", ephemeral=True)
+                return
+            
+            removed_count = 0
+            removed_users = []
+            
+            for entry in entries:
+                user_id = entry['user_id']
+                
+                # Try to get the member
+                member = interaction.guild.get_member(user_id)
+                if member is None:
+                    try:
+                        # Try fetching (slower but more reliable)
+                        member = await interaction.guild.fetch_member(user_id)
+                    except (Forbidden, HTTPException, NotFound):
+                        # Member not found - remove from database
+                        await execute("""
+                            DELETE FROM birthday_user WHERE guild_id = $1 AND user_id = $2
+                        """,
+                            interaction.guild.id,
+                            user_id
+                        )
+                        removed_count += 1
+                        removed_users.append(f"<@{user_id}> (ID: {user_id})")
+                        logger.info(f"Cleaned up birthday entry for user {user_id} who left guild {interaction.guild.id}")
+            
+            if removed_count == 0:
+                await interaction.followup.send("✅ All birthday entries are valid! No cleanup needed.", ephemeral=True)
+            else:
+                # Build response message
+                msg = f"✅ Cleaned up **{removed_count}** birthday {'entry' if removed_count == 1 else 'entries'}.\n\n"
+                
+                if removed_count <= 10:
+                    msg += "**Removed users:**\n" + "\n".join(removed_users)
+                else:
+                    msg += f"**Removed users:** {removed_count} total (too many to list)"
+                
+                await interaction.followup.send(msg, ephemeral=True)
+                    
+        except Exception as e:
+            logger.exception("Error in /cleanbirthdays command")
+            await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
         
 async def setup(bot):
     await bot.add_cog(BirthdayCog(bot))
